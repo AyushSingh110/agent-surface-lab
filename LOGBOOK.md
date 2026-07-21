@@ -242,3 +242,91 @@ env; `compileall` + import check clean.
 on qwen2.5:7b, (b) label failure_class + oracle k, (c) wire the deterministic verifier per task. README/aggregate
 results only after a real reproduced result.
 
+---
+
+## 2026-07-21 — Kill-test task suite spec (proposal, no code)
+**What:** Wrote `docs/kill-test-tasks.md` — a written spec (no code) proposing 36 candidate tasks (6 per ARIA
+class), the deterministic tool sandbox they need, each task's deterministic verifier + exact ground truth, an
+over-provisioning plan, and honest weak-spot flags.
+**Why:** The human wanted the task suite designed before the driver, since the tasks ARE the experiment (they set
+which failure classes can appear; each verifier is a recovery-rate denominator).
+**Result / key content:**
+- Per-class induction mechanisms: drift = multi-goal + tool-result "related:#NN" hooks; tool_misuse = brittle tools
+  (div/0, unsupported units, missing files/keys); context_overflow = long state-dependent chains; hallucination_loop
+  = facts absent from all tools (separates honest models from confabulators); goal_misalignment = skippable
+  file/deliverable.
+- Verifiers: numeric_exact / fact_match / file_written — all deterministic, no LLM judge.
+- Over-provisioning: plan in RUNS not tasks; ~120 runs (temp 0.7) to net ~30–38 failing with ≥3–6/class; recommend
+  a ~20-run pilot first to measure REAL per-class hit-rates (the stated hit-rates are guesses, not asserted facts).
+- Honest weak-spot flags: context_overflow (hardest) and prompt_drift (hard) may resist a disciplined 7B;
+  hallucination_loop may convert to honest "not found" (itself a finding); tool_misuse risks being
+  environment-driven not model-driven. Surfaced the option of generating starved classes on a messier model
+  (e.g. llama3.1:8b) vs accepting thin cells — the human's call.
+- 6 open design decisions listed for the human (approve/trim suite; pilot?; label-all-vs-failing-only; HL scoring;
+  TM-4 ambiguity; backbone-for-generation fallback).
+**Config:** no runs; no code. Backbone still qwen2.5:7b.
+**Next:** await human approval/edits on the task spec. Do NOT write the driver or generate traces yet.
+
+---
+
+## 2026-07-21 — Task suite approved; sandbox + fixtures + pilot driver built (NOT run)
+**What:** Recorded §6 decisions, then built the kill-test sandbox in code and the pilot driver. Did NOT generate
+any traces (awaiting the human's GT/fixture sign-off before generation).
+**Why:** Human approved the suite, pilot-first, label-failing-only, HL honesty scoring, no backbone fallback; and
+asked to see fixtures + the fact_match normalization rule before approving generation.
+**Decisions recorded:** suite approved; TM-4 DROPPED (ambiguous GT encoded a judgment) → 29 tasks; pilot first;
+label failing traces only (single labeler); HL = honesty-phrase set; no messier-model fallback (accept thin matrix +
+document as scope limit); labeling rubric gains an informal `tm_source` (tool_driven vs model_driven) flag.
+**Honest correction:** the earlier doc said "36 tasks" — arithmetic slip; 5 classes × 6 = 30, and after the TM-4 drop
+it is **29** (drift 6 / tool_misuse 5 / context_overflow 6 / hallucination_loop 6 / goal_misalignment 6). Fixed in
+the doc and encoded in `recovery_sandbox/tasks.py`.
+**Result — code built, tests green:**
+- New importable package `recovery_sandbox/`: `fixtures.py` (records/search/kv/log/units — all deterministic,
+  invariants asserted in tests), `tools.py` (`build_tools(sandbox_dir)` → 10 deterministic tools; errors returned as
+  strings; file tools confined to the run sandbox), `tasks.py` (29 TaskSpecs = single source of prompts/tools/
+  requirements/verifiers).
+- `harness/verifiers.py`: added `all_of`/`any_of` combinators; renamed the normalization helper to public
+  `normalize_text` so the search fixture and `fact_match` share ONE rule.
+- CO-5 verifier changed from a normalization-fragile fact_match string to `all_of(numeric_exact …)`.
+- `paper-recovery/pilot.py`: stratified generator (~20 runs default), saves traces to `data/pilot` (gitignored),
+  computes deterministic `answer_correct`, reports failure rate by INTENDED class. **Never labels failure_class**
+  (that's the human's). NOT executed.
+- `pyproject.toml`: packages now include `recovery_sandbox*`; reinstalled editable.
+- **pytest = 63 passed** (added tool determinism/error-path tests AND verifier-vs-fixture GT-consistency tests —
+  e.g. #1–6 have exactly 2 Sales, #1–10 have the 5 named departments, log.txt has 3 ERRORs, and each task's CORRECT
+  output actually verifies while a hallucinated number fails HL). `py_compile` clean.
+**Config:** no live-model runs. Backbone qwen2.5:7b; pilot config `paper-recovery/configs/kill_test.yaml` (temp 0.7,
+N=3).
+**Next:** show the human the fixtures + normalization rule; on approval, RUN the ~20-run pilot and report the real
+failure-by-intended-class rates. Do NOT run the full ~117 batch until pilot rates are in and approved.
+
+---
+
+## 2026-07-21 — Required fixes applied + PILOT RUN (real, low-yield result)
+**What:** Applied the 3 required fixes (dropped TM-2 → 28 tasks; TM-1 verifier separate from HL honesty set;
+number matching is whole-token not substring) and the HL fabrication rule (honesty AND no invented number). All
+tested — **pytest 67 passed**. Then ran the ~20-run pilot on qwen2.5:7b (temp 0.7), one run per task, 4 tasks/class.
+**Why:** Measure the REAL failure rate before sizing the full batch (human's pilot-first decision).
+**Config:** qwen2.5:7b, temp 0.7, max_turns 12; seed 20260721 (+run offset). 20 runs. Traces at
+`data/pilot/traces.jsonl` (gitignored). Code computed deterministic `answer_correct` only — NO class labeling.
+**Result — REAL numbers (failure rate by INTENDED class; realized class needs the human's labels):**
+- prompt_drift        4 runs, 1 failed (0.25)  — failing: DR-4-r3
+- tool_misuse         4 runs, 0 failed (0.00)
+- context_overflow    4 runs, 1 failed (0.25)  — failing: CO-1-r8
+- hallucination_loop  4 runs, 2 failed (0.50)  — failing: HL-3-r14, HL-4-r15
+- goal_misalignment   4 runs, 0 failed (0.00)
+- TOTAL: **4 failing / 20 runs (20%)**. All runs stopped at "final" (none hit the turn cap → no loop-type overflow).
+**Honest reading (this changes the plan):** qwen2.5:7b is too competent for most of these induction tasks. The two
+classes I called "easy/reliable" — goal_misalignment and tool_misuse — produced **ZERO** failures (it wrote every
+deliverable and handled every brittle tool). HL (predicted moderate) was the only reliable failure source (2/4,
+via fabrication). Extrapolating 20% across the full batch yields failures concentrated in HL/some drift/CO, with
+GM & TM starved — i.e. a thin/collapsed recovery matrix, exactly the §5 risk, worse than expected. The 4 failures
+are also too few, and n=4/class too noisy, to size anything; and a failing trace's realized class is unknown until
+labeled (CO-1 may label as arithmetic slip, not overflow).
+**Per decision 6 constraints:** hold the qwen pin; do NOT switch to a messier model; do NOT over-bait tasks.
+**Next:** STOP — human decision needed on direction before any more generation: (A) in-bounds difficulty increase
+(longer CO chains, lower max_turns to force incompletion, stronger-but-honest drift bait) then re-pilot; (B) accept
+a thin matrix, proceed on the classes that fail (HL clearly), document GM/TM/others as hard-to-induce-at-7B scope
+limits; or (C) narrow the kill test to inducible classes. Failing traces saved for the human's labeling. NO full
+batch, NO auto-labeling.
+

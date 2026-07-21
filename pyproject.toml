@@ -40,7 +40,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["harness*"]
+include = ["harness*", "recovery_sandbox*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

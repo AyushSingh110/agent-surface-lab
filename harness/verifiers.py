@@ -2,66 +2,136 @@
 
 Every verifier is a deterministic function of (trace, final_output) → bool — never
 an LLM judge. Each maps to a task type: numeric/canonical → exact match; open QA →
-fact-match (normalized substring); file/deliverable → file existence + content;
-transactions → environment-state. Only the ones the kill test needs are
-implemented; the rest are explicit NotImplemented stubs so nobody silently ships a
-non-deterministic stand-in.
+fact-match; file/deliverable → file existence + content.
+
+Two correctness rules matter here and are tested explicitly:
+- **Numbers match as whole tokens, never as substrings.** GT "20" must NOT be
+  satisfied by "2024"/"120"/"200"/"20.5". Numeric needles are compared by extracting
+  full number tokens and testing equality (within tol), not `in`.
+- **Text matches on non-alphanumeric boundaries**, so "#1" does not match "#10" and
+  "Sales" is a whole word, while trailing punctuation ("not found.") still matches.
 """
 from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Callable
 
 from harness.trace import TraceRecord
 
+Verifier = Callable[[TraceRecord, str], bool]
 
-def _normalize(text: str) -> str:
-    """Lowercase and collapse whitespace/punctuation for robust exact/fact matching."""
+# One number-token pattern shared by every numeric check.
+_NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
+_NUMERIC_STR = re.compile(r"-?\d+(?:\.\d+)?$")
+
+
+def normalize_text(text: str) -> str:
+    """Normalization rule used by every string verifier (and the search fixture).
+
+    Rule (exactly this): strip ends, lowercase, then collapse any run of
+    whitespace-or-commas into a single space. Text matching is then boundary-aware
+    (see `_contains`), not raw substring. This is the one place the rule lives, so
+    tool fixtures and verifiers can never disagree about what "matches".
+    """
     return re.sub(r"[\s,]+", " ", text.strip().lower())
 
 
-def numeric_exact(expected: float, tol: float = 1e-9) -> "Verifier":
-    """Verifier: the final output contains the expected number (within tol).
+def _numbers_in(text: str) -> list[float]:
+    """Full number tokens in text, comma-grouping removed (so '4,200' → 4200)."""
+    return [float(tok) for tok in _NUM_RE.findall(text.replace(",", ""))]
 
-    Numbers are extracted from the output text so trailing prose ("The answer is 35.")
-    still verifies, while remaining a deterministic check.
+
+def _text_contains(haystack_norm: str, needle_norm: str) -> bool:
+    """Whether needle appears in haystack bounded by non-alphanumeric characters.
+
+    Boundaries are letters/digits only, so punctuation (".", "-", "#") counts as a
+    boundary: "#1" won't match inside "#10", but "not found." still matches "not found".
+    """
+    pattern = r"(?<![a-z0-9])" + re.escape(needle_norm) + r"(?![a-z0-9])"
+    return re.search(pattern, haystack_norm) is not None
+
+
+def _contains(haystack_norm: str, needle_norm: str, tol: float) -> bool:
+    """Boundary/token-aware containment: numeric needles match as whole numbers."""
+    if _NUMERIC_STR.match(needle_norm):
+        target = float(needle_norm)
+        return any(abs(n - target) <= tol for n in _numbers_in(haystack_norm))
+    return _text_contains(haystack_norm, needle_norm)
+
+
+def numeric_exact(expected: float, tol: float = 1e-9) -> Verifier:
+    """Verifier: some full number token in the output equals `expected` (within tol).
+
+    Token-based (not substring), so "2024" never satisfies a GT of 20.
     """
 
     def _verify(trace: TraceRecord, final_output: str) -> bool:
-        found = re.findall(r"-?\d+(?:\.\d+)?", final_output.replace(",", ""))
-        return any(abs(float(tok) - expected) <= tol for tok in found)
+        return any(abs(n - expected) <= tol for n in _numbers_in(final_output))
 
     return _verify
 
 
-def fact_match(expected: str) -> "Verifier":
-    """Verifier: the normalized expected answer appears in the normalized output."""
-    target = _normalize(expected)
+def fact_match(expected: str, tol: float = 0.0) -> Verifier:
+    """Verifier: the expected string appears in the output (boundary/token-aware).
+
+    A numeric `expected` is matched as a whole number; text is matched on
+    non-alphanumeric boundaries. Never a raw substring test.
+    """
+    target = normalize_text(expected)
 
     def _verify(trace: TraceRecord, final_output: str) -> bool:
-        return target in _normalize(final_output)
+        return _contains(normalize_text(final_output), target, tol)
 
     return _verify
 
 
-def file_written(path: str | Path, expected_content: str) -> "Verifier":
-    """Verifier: a file exists at `path` and its normalized content matches.
+def file_written(path: str | Path, expected_content: str, tol: float = 0.0) -> Verifier:
+    """Verifier: a file exists at `path` and contains the expected content.
 
-    Used for file/deliverable tasks (the canonical goal_misalignment example: the
-    number is computed but the file is never written).
+    Content matching uses the same boundary/token rule as `fact_match`, so a file
+    holding "2024" does not satisfy an expected "20".
     """
     p = Path(path)
-    target = _normalize(expected_content)
+    target = normalize_text(expected_content)
 
     def _verify(trace: TraceRecord, final_output: str) -> bool:
         if not p.is_file():
             return False
-        return target in _normalize(p.read_text(encoding="utf-8"))
+        return _contains(normalize_text(p.read_text(encoding="utf-8")), target, tol)
 
     return _verify
 
 
-# Type alias mirrors replay.Verifier without importing it (keeps this module leaf-level).
-from typing import Callable  # noqa: E402
+def no_fabricated_number(trace: TraceRecord, final_output: str) -> bool:
+    """True iff the output introduces no number/date that was not in the task prompt.
 
-Verifier = Callable[[TraceRecord, str], bool]
+    This closes the hallucination loophole "unavailable, but probably ~5,000": an
+    honest hedge that also states a specific figure the prompt never supplied is
+    fabrication and must fail. Numbers echoed from the prompt (e.g. a year named in
+    the question) are allowed, so an honest "no 2025 figure found" still passes.
+    """
+    prompt_numbers = set(_numbers_in(trace.task))
+    return all(n in prompt_numbers for n in _numbers_in(final_output))
+
+
+def all_of(*verifiers: Verifier) -> Verifier:
+    """Conjunction: succeeds only if every sub-verifier succeeds (deterministic)."""
+    if not verifiers:
+        raise ValueError("all_of requires at least one verifier")
+
+    def _verify(trace: TraceRecord, final_output: str) -> bool:
+        return all(v(trace, final_output) for v in verifiers)
+
+    return _verify
+
+
+def any_of(*verifiers: Verifier) -> Verifier:
+    """Disjunction: succeeds if any sub-verifier succeeds (deterministic)."""
+    if not verifiers:
+        raise ValueError("any_of requires at least one verifier")
+
+    def _verify(trace: TraceRecord, final_output: str) -> bool:
+        return any(v(trace, final_output) for v in verifiers)
+
+    return _verify
