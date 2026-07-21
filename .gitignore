@@ -1,0 +1,29 @@
+# Secrets / local config — never commit (CLAUDE.md rule 4)
+.env
+
+# (conda env `surface` lives outside the repo — nothing to ignore here)
+
+# Raw research data — never commit (CLAUDE.md rule 5): traces, labeled sets, analyses
+data/
+*.jsonl
+
+# Ollama / model caches (in case a local cache is ever placed in-repo)
+.ollama/
+models/
+*.gguf
+
+# Python bytecode / build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

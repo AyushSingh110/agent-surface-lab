@@ -1,0 +1,10 @@
+# Kill-test run config for paper-recovery (Idea A).
+# Overrides Config dataclass defaults; loaded via harness.config.load_config().
+# Backbone/host/seed come from .env; anything here overrides them.
+# Keep this file the single source of run parameters (CLAUDE.md §4).
+
+model_tag: qwen2.5:7b   # pinned backbone (work-plan §8 item 8)
+seed: 20260721
+temperature: 0.7        # >0 so the N replays are a genuine recovery DISTRIBUTION
+n_replays: 3            # floor for real runs (§8 item 10); raise per-cell near boundaries
+max_turns: 12
