@@ -83,6 +83,10 @@ class TraceRecord:
     failure_class: Optional[str] = None
     failure_step_k: Optional[int] = None
     requirement: Optional[str] = None  # the task's explicit requirement (for injection intervention)
+    # Why the run ended: "final" (agent answered) or "max_turns" (hit the budget). A
+    # max_turns failure is a "task exceeded budget" event, kept distinct from an
+    # induced in-class failure during labeling.
+    stopped_reason: Optional[str] = None
 
     def to_json_line(self) -> str:
         """Serialize to a single JSONL line."""

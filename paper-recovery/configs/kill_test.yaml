@@ -7,4 +7,6 @@ model_tag: qwen2.5:7b   # pinned backbone (work-plan §8 item 8)
 seed: 20260721
 temperature: 0.7        # >0 so the N replays are a genuine recovery DISTRIBUTION
 n_replays: 3            # floor for real runs (§8 item 10); raise per-cell near boundaries
-max_turns: 12
+max_turns: 8            # realistic production tool-call budget (re-pilot, human-approved);
+                        # a max_turns stop is a "task exceeded budget" event, labeled distinctly
+

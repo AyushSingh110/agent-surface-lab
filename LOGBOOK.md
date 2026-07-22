@@ -330,3 +330,66 @@ a thin matrix, proceed on the classes that fail (HL clearly), document GM/TM/oth
 limits; or (C) narrow the kill test to inducible classes. Failing traces saved for the human's labeling. NO full
 batch, NO auto-labeling.
 
+---
+
+## 2026-07-22 — HL verifier false-negative found + fixed; human labels; confirmatory re-pilot launched
+**What:** While preparing the 4 failing pilot traces for the human's labeling, found that HL-3 and HL-4 were
+**verifier false-negatives**: the model answered honestly ("did not yield any results", "could not be found") but
+the fixed honesty-phrase list didn't contain those phrasings, so honest answers were scored as failures. Replaced
+the phrase list with a robust rule and re-ran the confirmatory pilot.
+**Why:** A wrong verifier would have put a false "HL is the reliable failure source / 0.50" headline in the paper.
+The real pilot failure count is ~2/20, and the model did NOT hallucinate on HL.
+**Human labels (their call, decision 4):**
+- DR-4 → **hallucination_loop** (asserted a manager name in no tool result instead of calling get_record(77));
+  insight: hallucination appeared where drift was intended.
+- CO-1 → **completion slip, closest to goal_misalignment** (6 clean adds, no repeat/loop; stopped one operand short).
+- Realized distribution over 20: ~1 hallucination, ~1 completion slip; **ZERO** clean context_overflow / tool_misuse /
+  deliverable-skip. Human decision: do NOT force a five-class matrix on qwen2.5:7b; expect to REFRAME.
+**Fix + changes (all human-approved):**
+- **Robust HL rule `no_fabricated_value`** (harness/verifiers.py): correct iff (every number/date in the output was
+  in the prompt) AND (no magnitude word hundred/thousand/million/billion/trillion absent from the prompt). No phrase
+  list. Credits any honest acknowledgement; fails only on a fabricated figure. Dead phrase list removed.
+- **max_turns 12→8** (kill_test.yaml): realistic production tool-call budget; a max_turns stop is tagged
+  `stopped_reason="max_turns"` and reported as **budget_exceeded**, kept DISTINCT from context_overflow.
+- **Driver (pilot.py):** `--repeats` (default 3), runs all 28 tasks, separates induced_fail vs budget_exceeded in
+  the summary; added `stopped_reason` to TraceRecord for labeling.
+- **pytest = 69 passed**, incl. regression tests on HL-3/HL-4's exact pilot outputs (now correct) and spelled-out
+  magnitude fabrication ("about five million" fails).
+**Config:** re-pilot = qwen2.5:7b, temp 0.7, max_turns 8, 84 runs (28 tasks × 3), seed 20260721 + per-run offset;
+output data/repilot (gitignored). Launched in background 2026-07-22.
+**Next:** on completion, report failure-rate by INTENDED class (induced_fail vs budget_exceeded), save all failing
+traces for the human's labeling (no auto-labeling). Then HOLD for the human's scope decision — expected direction:
+(B/C) accept a narrow, hallucination-by-skipped-lookup-dominated failure surface and reframe the paper around it +
+the iatrogenic-rate question on that surface. NO full batch.
+
+---
+
+## 2026-07-22 — Re-pilot results (84 runs) + TWO MORE verifier artifacts found
+**What:** Ran the 84-run confirmatory re-pilot (28 tasks × 3, max_turns 8) and read every induced-failure output.
+**Config:** qwen2.5:7b, temp 0.7, max_turns 8, seed 20260721+offset; traces at data/repilot/traces.jsonl.
+**Result (deterministic answer_correct; realized class needs human labels):**
+- Totals: 11 induced_fail + 6 budget_exceeded of 84. By intended class: prompt_drift 5, context_overflow 3(+3 budget),
+  tool_misuse 2, goal_misalignment 1(+3 budget), hallucination_loop **0**.
+- **HL fix validated:** 0/18 hallucination on absent-fact tasks — the model honestly acknowledges absence every time.
+  The pilot-1 HL "failures" were entirely verifier bugs.
+**CRITICAL — two more verifier false-negatives (same rigidity bug as HL), flagged not silently fixed:**
+- **TM-3 (2):** model said "could not be found" / "does not exist" — correct handling of a missing file — but GT
+  `fact_match("not found")` doesn't substring-match those phrasings → scored wrong. NOT real failures.
+- **GM-2 (1):** model wrote a valid 3-row comparison to cmp.txt but formatted rows "1./2./3." instead of "#1/#2/#3",
+  so `file_written("#1")` failed on formatting. Deliverable correct → NOT a real failure.
+- So **real induced failures ≈ 8, not 11.** Lesson: rigid fact_match/file_written GTs misclassify correct-but-
+  differently-worded answers; every string GT needs a hardening/audit pass before a real recovery run.
+**Genuine failure surface (observable behavior, not labels):**
+- Hallucination-by-skipped-lookup (DR-4 ×2): tool returned manager=#77; model skipped get_record(77) and invented a
+  name. The one clear, interesting, real failure mode.
+- Date-arithmetic error (DR-6 ×3): fed YYYYMMDD ints to subtract (194) instead of calendar days (56).
+- Completion slip / empty final (CO-1 ×3): stopped an operand short or emitted empty output; no looping.
+- Budget-exceeded (CO-6 ×3, GM-3 ×3): long tasks hit the 8-turn cap; correctly tagged, NOT overflow.
+- Clean context_overflow (loop), tool_misuse (misuse a WORKING tool), deliverable-skip: ~zero real instances.
+**Interpretation:** confirms the decision to NOT force a five-class matrix. Realized surface is narrow and centers on
+hallucination-by-skipped-lookup. Before any real recovery run, verifiers must be hardened (TM-3 absence check, GM-2
+formatting, audit all string GTs) — a ground-truth change = human's call.
+**Next:** HOLD for the human's scope decision (expected B/C + re-center on hallucination-by-skipped-lookup and the
+iatrogenic-rate question on that surface). Propose verifier-hardening rules for approval. NO full batch, NO
+auto-labeling. 17 failing traces saved for the human's labeling.
+
