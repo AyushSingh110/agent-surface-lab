@@ -393,3 +393,39 @@ formatting, audit all string GTs) — a ground-truth change = human's call.
 iatrogenic-rate question on that surface). Propose verifier-hardening rules for approval. NO full batch, NO
 auto-labeling. 17 failing traces saved for the human's labeling.
 
+---
+
+## 2026-07-22 — Verifier adversarial audit + mechanism-level reframe + v2 spec + narrative doc
+**What:** Executed three directives + a standing requirement. (1) Built and ran an adversarial verifier battery over
+all 28 tasks; (2) reframed the study to the mechanism level; (3) wrote the v2 task-family spec; and created the
+synthesized research-narrative document.
+**Why:** Three rigid-string verifier false-negatives in a row (HL-3/HL-4, TM-3×2, GM-2) = a systematic ground-truth
+risk that silently corrupts every recovery denominator. Audit made top priority. Results also decisively support a
+mechanism-level reframe over a five-class matrix.
+**Result — Directive 1 (audit):** `recovery_sandbox/audit_battery.py` (147 cases: ≥3 correct phrasings + ≥2 wrong
+near-misses per task) + `tests/test_verifier_audit.py` regression guard. **7 mismatches across 4 patterns:**
+- TM-3 (3): rigid absence phrasing — "could not be found"/"does not exist"/"no such file" fail fact_match("not found").
+- GM-2 (2): rigid `#N` deliverable formatting — "1. Alice…"/"names only" fail file_written("#1").
+- CO-4 (1): spelled-out number — "Two records" fails numeric_exact (digit-only).
+- DR-5 (1): **false-POSITIVE** — "212 K" (right number, wrong unit) wrongly PASSES numeric_exact(212). Most dangerous
+  (under-counts failures).
+- HL rule re-verified against the battery: passes all correct paraphrases AND fails fabricated numbers/magnitudes.
+Proposed hardened rules (robust absence; name-based deliverable; spelled-number-aware numeric; numeric_with_unit) are
+**NOT applied** — ground-truth changes pending human approval. **pytest = 72 passed.** All pilot numbers labeled
+PROVISIONAL until hardening is approved/applied and pilots re-scored.
+**Result — Directive 2 (reframe):** work-plan.md §2 rewritten to the mechanism spine (skipped-lookup hallucination +
+silent tool misuse), with prior two framings kept and marked SUPERSEDED. New §2.0 proposes an operational definition
+of **silent tool misuse** and argues DoVer/CausalFlow/CAR are structurally blind to it (no error signal to detect).
+paper-recovery/README.md spine updated + PROVISIONAL banner.
+**Result — Directive 3 (spec):** `docs/task-family-v2.md` — ~13 skipped-lookup + ~13 silent-misuse tasks with design
+axes, per-task hypothesized hit-rates + reasoning, run budgets (~120 to net ~30 failures/mechanism), controls
+(anti-guess instruction / right-tool-present / unit-named), and honest manufacturing-risk flags. No code, no traces.
+Second-backbone generalization check flagged for AFTER the v2 pilot, not decided.
+**Standing:** `docs/RESEARCH-NARRATIVE.md` — full synthesized first version (question, literature+scoop, every
+decision with alternatives/why/cost, every result incl. the two verifier corrections, status/limitations). Living
+doc; superseded reasoning marked; provisional numbers labeled.
+**Config:** no model runs this turn. Backbone qwen2.5:7b.
+**Next:** HOLD. Await human approval of (a) the 4 hardened verifier rules, (b) the silent-tool-misuse definition,
+(c) the v2 task families. Do NOT apply rules, build fixtures, or generate traces until approved. Then: apply hardened
+rules → re-score pilots → build v2 fixtures/verifiers-against-battery → v2 ~20-run pilot.
+

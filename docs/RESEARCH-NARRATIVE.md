@@ -1,0 +1,233 @@
+# Research Narrative — `agent-surface-lab` / paper-recovery
+
+*A synthesized, rewritten account of this project — written to be read end-to-end by a technical
+person who has never seen it, so they can understand and defend it cold (interview, viva, supervisor
+meeting). This is **not** the logbook. `LOGBOOK.md` is the append-only, chronological reproducibility
+record; this document is a living synthesis that gets **rewritten** as understanding improves.
+Superseded reasoning is kept but marked. Numbers that have not survived the verifier audit are labeled
+**PROVISIONAL**. Nothing here is written to impress; it is written to be true under questioning.*
+
+**Last synthesized:** 2026-07-22, after the confirmatory re-pilot and the verifier adversarial audit.
+
+---
+
+## 1. The question, and why it matters
+
+When an LLM agent fails partway through a task, a production on-call engineer's real question is not
+"which step broke?" but the *next* one: **now that it's failing, what do I do, and will doing something
+make it better or worse?** Teams bolt on "reflect and retry" or "self-correction" loops on the
+assumption that intervening helps. That assumption is largely untested at the level of *which
+intervention works on which kind of failure* — and it is entirely plausible that generic reflection is
+net-harmful on some failures (it rationalizes a wrong answer more fluently) where a blunt rollback
+would have worked.
+
+The distinctive methodological commitment is that we measure recovery **causally, by counterfactual
+replay**: take a failing recorded run, rewind to the failure step *k*, apply an intervention, re-run
+forward, and check the *actual* outcome against deterministic ground truth. This is a real
+counterfactual, not an LLM judge's opinion about whether a fix "looks better."
+
+The program-level thesis this study sits under: **LLM agents act on surface text and surface cues
+rather than the deeper property those cues are supposed to represent** — descriptions instead of
+capability, words instead of consequence, a detected failure instead of a recoverable one.
+
+---
+
+## 2. Where this sits in the literature (and how our framing was forced to sharpen)
+
+The agent-failure field is saturated on **detection and attribution**: Who&When and Who&When Pro,
+AgenTracer, GraphTracer, ErrorProbe — all answer "which agent/step caused the failure." Almost none ask
+whether detection is *actionable*.
+
+The uncomfortable finding of our literature scan was that the **repair** neighbourhood filled in fast
+during 2025–2026, and it partially scoops the framing we started with:
+
+- **DoVer** (arXiv:2512.06749) reframes debugging from attribution toward *recovery*: it intervenes at a
+  step and validates by in-place replay (milestone/utility progress), recovering ~49% of failed trials
+  in its best setting. It is multi-agent and uses a milestone metric, not deterministic ground truth.
+- **CausalFlow** (2605.25338) does causal attribution **plus minimal counterfactual repair**.
+- **Causal Agent Replay** (2606.08275) formalizes do-operations replayed under the same stochastic
+  policy.
+
+**Consequence for us:** the bare claim "detection is not repair — intervene and verify by replay" is no
+longer novel; DoVer/CausalFlow/CAR occupy it. What none of them do is measure the **iatrogenic rate**
+(interventions that make outcomes *worse* than doing nothing) — none has a **no-op control** on runs
+that might self-recover. That, plus a **class/mechanism-conditional** accounting and the bridge to
+**cost-aware early prediction** (Idea B), is where our contribution survives. See §4 for how a later
+empirical result forced a second, sharper reframe to the *mechanism* level.
+
+(The sibling study `paper-toolseo` was similarly checked: its original headline — description text buys
+tool-selection share at fixed capability — is largely scooped by *Agent-Facing Information Design*
+(2605.23916) and *BiasBusters* (2510.00307); its live gap is persistence-after-failure + an
+outcome-based defense. That study is deferred and not the subject of this narrative.)
+
+---
+
+## 3. Significant decisions — what, alternatives, why, and cost
+
+Each decision is stated with the alternative we rejected and what choosing this one cost us.
+
+**3.1 One shared harness, monorepo, sequential studies.** *Alternatives:* one big platform; five
+separate repos. *Why:* reviewers reward one clean question; the engineering under the studies is nearly
+identical, so a reusable harness compounds. *Cost:* discipline required to keep `harness/`
+study-agnostic (experiment specifics live in `recovery_sandbox/`, not the harness).
+
+**3.2 Ollama-only backbone (dropped Groq).** *Alternative:* a Groq-hosted + Ollama pair. *Why:* the
+human chose a single local backbone; no hosted-API dependency or secrets. *Cost:* slower inference on
+consumer hardware; no large-model comparison unless explicitly added.
+
+**3.3 Trace provenance = generate fresh (Option C), not reuse ARIA.** *Alternatives:* reuse ARIA's
+existing traces as-is; reuse + relabel. *Why:* ARIA's traces were generated on Groq
+`llama-3.1-8b-instant`; replaying them forward on Ollama would mix backbones and dirty the
+counterfactual. Fresh generation keeps record and replay on one model. *Cost:* we must build a runner +
+recorder before we can produce any traces, and we re-label from scratch.
+
+**3.4 Labeling = adopt ARIA's decision-tree guide verbatim.** *Alternative:* invent a new taxonomy.
+*Why:* ARIA already ships an operational, decision-tree labeling guide with the exact five classes;
+reusing it gives continuity and a tested protocol. *Cost:* inherits ARIA's class boundaries, which the
+mechanism-level reframe (§4) later shows are the wrong cut for a capable model. Single labeler at
+kill-test scale; two-annotator + Cohen's κ reserved for the full study.
+
+**3.5 Deterministic ground truth, never an LLM judge.** *Alternative:* an LLM-as-judge scorer.
+*Why:* a counterfactual outcome must be checkable and reproducible; an LLM judge reintroduces the
+surface-text problem we study. *Cost:* writing per-task-type verifiers (exact-match / fact-match /
+file-written), and — as §4 shows — **rigid string verifiers turned out to be the single biggest risk in
+the project** (they silently misclassify correct answers).
+
+**3.6 Replay determinism = sample N≥3 and report a distribution (Option b).** *Alternative:* a single
+deterministic replay (seed + temperature 0). *Why:* a single sample can masquerade as a recovery or a
+failure under a stochastic policy; a distribution is honest about variance and lets us raise N near a
+decision boundary. *Cost:* ~N× the compute per cell. Seed, temperature, and model tag are logged on
+every replay.
+
+**3.7 Backbone pin = qwen2.5:7b.** *Alternative:* llama3.1:8b (ARIA's family — continuity). *Why:* a
+head-to-head tool-calling smoke test showed llama3.1:8b fails multi-step tool-argument threading ~100%
+of the time (it passes the literal token "result" as an argument), while qwen2.5:7b threads cleanly 6/6.
+A model that can't chain tools would flood the traces with one artifact. *Cost:* drops the ARIA
+model-family continuity (acceptable — we generate fresh traces anyway).
+
+**3.8 Detection step *k* = oracle-labeled.** *Alternative:* a real detector chooses *k*. *Why:* the
+kill test isolates *repair* from *detection*; an oracle *k* is a cleaner counterfactual than DoVer's LLM
+localizer. *Cost:* the kill test does not yet speak to detector quality (that is Idea B's job).
+
+**3.9 max_turns = 8 (re-pilot).** *Alternative:* 12. *Why:* a realistic production tool-call budget; a
+`max_turns` stop is a legitimate "task exceeded budget" event, tagged `stopped_reason="max_turns"` and
+counted **separately** from an in-run failure. *Cost:* genuinely long tasks (e.g. ten sequential adds)
+fail by budget — which is why we separate that bucket rather than miscount it as context_overflow.
+
+**3.10 Do NOT switch backbones to populate empty classes.** *Alternative:* generate stubborn classes on
+a messier model. *Why:* that would confound the model variable to rescue a five-class matrix that the
+data says does not exist. *Cost:* we accept empty cells and a reframe (§4) rather than a fuller-looking
+but dishonest matrix. (A second backbone is reconsidered later as a *generalization check*, not a
+confound.)
+
+---
+
+## 4. Significant results — what we ran, what came back, what it meant, what changed
+
+This is the heart of the project so far. Two of these are corrections of our own mistakes; they are the
+methodological spine of the paper, not embarrassments to hide.
+
+**4.1 Pilot 1 (20 runs, max_turns 12).** Only 4/20 runs failed. The classes we predicted were *easiest*
+to induce — goal_misalignment and tool_misuse — produced **zero** failures; the model wrote every
+deliverable and handled every erroring tool. *Meaning:* a capable instruction-tuned 7B is simply
+competent on most of these induction tasks. *Change:* triggered the human's decision not to force a
+five-class matrix.
+
+**4.2 First verifier false-negative (HL) — a correction.** On inspection, two of the four "failures"
+(HL-3, HL-4) were **not** failures: the model answered honestly ("did not yield any results", "could not
+be found"), but the verifier used a fixed honesty-phrase list that did not contain those phrasings, so
+honest answers were scored as failures. *Meaning:* the reported `hallucination = 0.50` was a
+**measurement artifact**; the model did not hallucinate on absent-fact tasks at all. *Change:* replaced
+the phrase list with a robust rule — **correct iff the output asserts no fabricated number/date and no
+spelled-out magnitude the prompt did not supply** (`no_fabricated_value`). This credits any honest
+wording and fails only on a fabricated figure.
+
+**4.3 Human labels on the two real pilot-1 failures.** DR-4 → *hallucination_loop* (the tool returned
+`manager=#77`; the model skipped `get_record(77)` and invented a name). CO-1 → *completion slip*, closest
+to goal_misalignment (six clean adds, no loop, stopped one operand short). *Meaning:* the model's real
+failures did not land in their intended classes, and hallucination appeared where *drift* was intended —
+class labels were the wrong lens.
+
+**4.4 Re-pilot (84 runs, max_turns 8, verifier fixed).** Provisional: 11 induced failures + 6
+budget-exceeded of 84. **hallucination_loop = 0/18** — with the fix, the model never fabricated on
+absent-fact tasks; it is *honest when tools return nothing*.
+
+**4.5 Two more verifier false-negatives — the pattern crystallizes.** Reading every induced failure
+showed 3 of the 11 were **not** model failures: **TM-3 ×2** (the model correctly said "could not be
+found" / "does not exist", but the GT `fact_match("not found")` didn't match those phrasings) and
+**GM-2 ×1** (the model wrote a valid 3-row comparison but labeled rows "1./2./3." instead of "#1/#2/#3",
+so a formatting-rigid check failed). *Meaning:* **real induced failures ≈ 8, not 11**, and — more
+importantly — three rigid-string false-negatives in a row is a *systematic* risk: every recovery rate we
+will ever compute has "did this run fail" as its denominator, and a false-positive failure rate corrupts
+the entire matrix while throwing no error. *Change:* a full **adversarial verifier audit** was made the
+top priority (§4.7).
+
+**4.6 The genuine failure surface (observable behavior; realized labels are the human's).**
+- **Hallucination-by-skipped-lookup (DR-4):** the model fabricates a fact that was *available but
+  unfetched* (it had `manager=#77` and invented a name rather than making the second call). ~2/3.
+- **Silent tool misuse (DR-6):** the model fed dates to `subtract` as raw integers
+  (`20260915 − 20260721 = 194`) instead of computing 56 calendar days — a **working** tool, **no error**,
+  a wrong answer traceable to a real tool result. ~3/3.
+- Minor: completion slips / empty outputs (CO-1); budget-exceeded on genuinely long tasks (CO-6, GM-3).
+- **Essentially zero** clean context_overflow (looping), tool_misuse (misusing an *erroring* tool), or
+  deliverable-skip. The surface is **narrow and mechanism-shaped**, not class-shaped.
+
+**4.7 Verifier adversarial audit (Directive 1).** A committed battery of 147 cases (≥3 correct
+phrasings + ≥2 wrong near-misses per task) run against every verifier surfaced **7 mismatches across 4
+patterns**: (a) **TM-3** rigid absence phrasing (3 false-negatives); (b) **GM-2** rigid `#N` deliverable
+formatting (2 false-negatives); (c) **CO-4** spelled-out number "two" not recognized (1 false-negative);
+(d) **DR-5** a *false-positive* — "212 K" (right number, wrong unit) wrongly scored correct because the
+numeric check ignores units. The false-positive is the most dangerous kind: it *under*-counts failures.
+The battery is now a pytest regression guard (`test_verifier_audit.py`) that fails if any new gap appears
+or a known one is fixed without updating the record. Proposed hardened rules (robust absence, name-based
+deliverable, spelled-number-aware numeric, and `numeric_with_unit`) are **pending human approval** — they
+are ground-truth changes, so they are not applied silently.
+
+**4.8 The reframe these results forced (mechanism level).** We do not force a five-class matrix. New
+spine: *a capable instruction-tuned agent rarely loops, skips deliverables, or misuses erroring tools; it
+fails by (1) skipped-lookup hallucination and (2) silent tool misuse.* The key generalization: **failure
+rate is a property of task STRUCTURE, not failure class** — class averaging hid two near-deterministic
+inducers (DR-4, DR-6) among four inert drift tasks. **Silent tool misuse is a taxonomy gap** (see
+`work-plan.md` §2.0): by ARIA's rules it is neither tool_misuse (no error evidence) nor
+hallucination_loop (the number came from a real tool result), and the whole counterfactual-repair cluster
+(DoVer/CausalFlow/CAR) is **structurally blind** to it because their detectors depend on error/anomaly
+signals that do not exist here. The iatrogenic-rate contribution and the no-op control remain the spine,
+re-aimed at these two mechanisms.
+
+---
+
+## 5. Current status, open questions, known limitations
+
+**Status.** Harness built and tested (recorder, replay+reconstruct, interventions incl. a first-class
+no-op control, metrics, deterministic verifiers). Sandbox + 28-task v1 suite built. Two pilots run.
+Verifier audit committed. Framing reframed to the mechanism level. **No recovery experiment has been run;
+no matrix exists.** README carries no results.
+
+**Everything numeric is PROVISIONAL.** All pilot rates predate the approved-and-applied verifier
+hardening. Until the audit's proposed rules are approved and applied and the pilots re-scored, treat
+every failure rate as provisional (they are so labeled wherever they appear).
+
+**Open questions / immediate next steps.**
+1. Human approval of the four hardened verifier rules (§4.7); then apply and re-score.
+2. Human ratification of the **silent-tool-misuse** operational definition (`work-plan.md` §2.0).
+3. Approval of the **v2 task families** (`task-family-v2.md`): ~13 skipped-lookup + ~13 silent-misuse
+   tasks, verifiers built against the battery, a ~20-run pilot before any full batch.
+4. A **second-backbone generalization check** — held until the v2 pilot shows a real hit rate; under the
+   new framing it is a generalization test ("do these mechanisms appear across models?"), not a confound.
+
+**Known limitations (stated plainly).**
+- **One model, small, toy tasks.** External validity is unestablished; the mechanism framing is what
+  makes this more than a one-model characterization, but generalization is untested (hence step 4).
+- **Silent-misuse tasks risk manufacturing** if we withhold an obvious tool purely to force misuse; the
+  v2 spec includes controls (right-tool-present; unit named; id clarified) precisely to separate a real
+  mechanism from a tooling artifact. Report both.
+- **The verifier is now understood to be a first-class threat to validity**, not plumbing. The audit is a
+  standing guard, not a one-time fix; every new task enters the battery before it is run.
+- **n is tiny so far** (~8 real induced failures). This is not yet a study; scaling the two working
+  structures (v2) is the path to a real n.
+
+---
+
+*Maintenance rule: update this document at every significant decision or result, alongside the LOGBOOK
+entry. Rewrite sections as understanding improves; keep superseded reasoning visible and marked with the
+reason it was superseded.*

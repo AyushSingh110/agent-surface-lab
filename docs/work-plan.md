@@ -26,17 +26,61 @@ built unless you explicitly ask.
 
 ---
 
-## 2. Study 1 — `paper-recovery` (Ideas A + B): *Not all repair helps*
+## 2. Study 1 — `paper-recovery` (Ideas A + B): *How capable agents actually fail, and what repairs it*
 
-> **FRAMING REFRAME (2026-07-21, post-DoVer — DECIDED by human).** The old spine "detection is not repair /
-> you should intervene, not just detect" is **retired**: DoVer (arXiv:2512.06749), CausalFlow (2605.25338), and
-> Causal Agent Replay (2606.08275) already establish intervene-and-verify-by-replay. **New spine:** *"not all
-> repair helps — which intervention recovers which failure class, and where standard self-correction actively
-> harms."* The **iatrogenic rate is now the central contribution**, because no paper in the counterfactual-repair
-> cluster measures it. Consequence for the build: the **no-op control arm** (re-running from *k* unchanged, to see
-> which runs would self-recover) is the differentiator and is a first-class, never-dropped part of the design.
-> Cite DoVer/CausalFlow/CAR as the foundation we build the accounting on top of. See `literature-review.md`
-> Addendum for the full reasoning.
+> **MECHANISM-LEVEL REFRAME (2026-07-22, DECIDED by human — supersedes the two framings below).** The pilots
+> showed a capable instruction-tuned 7B (qwen2.5:7b) **does not** loop, skip deliverables, or misuse *erroring*
+> tools in any reliable way — three of the five ARIA classes were empty, not thin. Forcing a five-class matrix on
+> this model is not defensible. Instead we go to the **mechanism level**. New spine:
+>
+> *A capable instruction-tuned agent rarely loops, skips deliverables, or misuses erroring tools. It fails in two
+> specific, reproducible ways: (1) it **fabricates facts that were AVAILABLE but UNFETCHED**, and (2) it **misuses
+> WORKING tools in ways that produce NO error evidence**. This work characterizes both, measures which
+> interventions recover each, and identifies where standard self-correction makes them worse.*
+>
+> The driving observation: **failure rate is a property of TASK STRUCTURE, not failure class.** Class-level
+> averaging hid two near-deterministic inducers — DR-4 failed 2/3 and DR-6 failed 3/3 while the other four drift
+> tasks produced zero. The two mechanisms:
+>
+> - **Mechanism 1 — Skipped lookup (~67% observed).** A tool returns a *reference* to another record
+>   (`manager=#77`); the model answers from invention rather than making the second call. (DR-4: fabricated a
+>   manager name instead of calling `get_record(77)`.)
+> - **Mechanism 2 — Silent tool misuse (~100% observed).** A *working* tool accepts semantically invalid input
+>   without erroring (dates fed to `subtract` as raw integers: `20260915 − 20260721 = 194` instead of 56 calendar
+>   days). (DR-6, all 3 runs.)
+>
+> **Mechanism 2 is a taxonomy gap and a contribution in its own right** (see §2.0). All observed numbers are
+> **PROVISIONAL** pending the verifier audit (Directive 1). The **iatrogenic-rate contribution and the no-op
+> control remain the spine** — we re-aim them at failures that actually occur, not abandon them. Cite
+> DoVer/CausalFlow/CAR as the counterfactual-repair foundation; note (§2.0) they are structurally blind to
+> Mechanism 2.
+
+> **SUPERSEDED (2026-07-21) — "not all repair helps."** Prior spine: *"which intervention recovers which failure
+> class, and where standard self-correction actively harms,"* with the iatrogenic rate central. **Why superseded:**
+> still correct in spirit, but it presupposed a populated five-class matrix the pilots disproved; re-aimed at the
+> two mechanisms above. The iatrogenic/no-op core carries forward unchanged.
+
+> **SUPERSEDED (pre-2026-07-21) — "detection is not repair."** Retired because DoVer/CausalFlow/CAR already
+> establish intervene-and-verify-by-replay. See `literature-review.md` Addendum.
+
+### 2.0 The taxonomy gap: *silent tool misuse* (proposed contribution)
+
+**Operational definition (proposed).** A **silent tool misuse** is a step where the agent calls a *working* tool
+with **semantically invalid arguments the tool accepts without error**, and then treats the (well-formed but
+meaningless) result as valid. Diagnostic criteria, all required:
+1. the tool returns a normal (non-error) result — no error string, no rejected/malformed call;
+2. the arguments are valid *in type/shape* but wrong *in meaning* for the task (e.g. `YYYYMMDD` integers passed to a
+   numeric `subtract` as if they were day counts);
+3. the wrong final answer is *traceable to that tool result*, not invented from nothing.
+
+**Why it is a gap.** By ARIA's decision tree it is **not `tool_misuse`** (that requires error evidence — criterion
+1 rules it out) and **not `hallucination_loop`** (the number came from a *real* tool result, not from thin air). It
+falls between the classes. **The entire counterfactual-repair cluster is structurally blind to it:** DoVer,
+CausalFlow, and CAR localize failures using error/anomaly signals that, by criterion 1, *do not exist here* — there
+is nothing for their detectors to fire on. That blindness is itself a finding.
+
+*(This definition is the human's to ratify or amend — it defines a matrix axis, so per CLAUDE.md §2 it is flagged,
+not adopted unilaterally.)*
 
 ### 2.1 Idea A — Recovery, not detection
 

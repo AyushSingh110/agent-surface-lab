@@ -1,13 +1,18 @@
 # paper-recovery (Ideas A + B)
 
-**Spine (post-DoVer reframe):** *not all repair helps — which intervention recovers which
-failure class, and where standard self-correction actively harms.* The **iatrogenic rate**
-(interventions that do worse than doing nothing) is the central contribution, measured causally
-by counterfactual replay against a **no-op control**. See `docs/work-plan.md` §2 and
-`docs/literature-review.md` (DoVer addendum).
+**Spine (mechanism-level reframe, 2026-07-22):** a capable instruction-tuned agent rarely loops,
+skips deliverables, or misuses *erroring* tools. It fails in two specific, reproducible ways —
+**(1) skipped-lookup hallucination** (fabricating a fact that was available but unfetched) and
+**(2) silent tool misuse** (misusing a *working* tool with no error evidence). This work
+characterizes both, measures which interventions recover each, and identifies where standard
+self-correction makes them worse. The **iatrogenic rate** vs a **no-op control**, measured by
+counterfactual replay, remains the spine — re-aimed at failures that actually occur. Silent tool
+misuse is a taxonomy gap the counterfactual-repair cluster (DoVer/CausalFlow/CAR) is structurally
+blind to. See `docs/work-plan.md` §2/§2.0, `docs/task-family-v2.md`, and `docs/RESEARCH-NARRATIVE.md`.
 
-> Status: harness scaffolded; **no experimental results yet.** No numbers here until a real,
-> reproduced kill test exists (CLAUDE.md §5 — README milestones only).
+> Status: harness + sandbox scaffolded; pilots run. **All pilot numbers are PROVISIONAL** pending
+> the verifier audit (see `docs/RESEARCH-NARRATIVE.md`). No results in this README until a real,
+> reproduced, audit-clean result exists (CLAUDE.md §5 — README milestones only).
 
 ## How the kill test wires together (once traces + oracle labels exist)
 
