@@ -148,9 +148,10 @@ to goal_misalignment (six clean adds, no loop, stopped one operand short). *Mean
 failures did not land in their intended classes, and hallucination appeared where *drift* was intended —
 class labels were the wrong lens.
 
-**4.4 Re-pilot (84 runs, max_turns 8, verifier fixed).** Provisional: 11 induced failures + 6
-budget-exceeded of 84. **hallucination_loop = 0/18** — with the fix, the model never fabricated on
-absent-fact tasks; it is *honest when tools return nothing*.
+**4.4 Re-pilot (84 runs, max_turns 8).** As first scored: 11 induced failures + 6 budget-exceeded of
+84. **After the verifier audit and re-scoring (§4.7): 8 induced failures + 6 budget-exceeded.**
+**hallucination_loop = 0/18** — the model never fabricated on absent-fact tasks; it is *honest when
+tools return nothing*.
 
 **4.5 Two more verifier false-negatives — the pattern crystallizes.** Reading every induced failure
 showed 3 of the 11 were **not** model failures: **TM-3 ×2** (the model correctly said "could not be
@@ -163,6 +164,8 @@ the entire matrix while throwing no error. *Change:* a full **adversarial verifi
 top priority (§4.7).
 
 **4.6 The genuine failure surface (observable behavior; realized labels are the human's).**
+*Post-hardening, the re-pilot's 8 induced failures are exactly three behaviours: DR-4 ×2, DR-6 ×3,
+CO-1 ×3 — with tool_misuse, goal_misalignment and hallucination_loop all at **zero**.*
 - **Hallucination-by-skipped-lookup (DR-4):** the model fabricates a fact that was *available but
   unfetched* (it had `manager=#77` and invented a name rather than making the second call). ~2/3.
 - **Silent tool misuse (DR-6):** the model fed dates to `subtract` as raw integers
@@ -172,16 +175,35 @@ top priority (§4.7).
 - **Essentially zero** clean context_overflow (looping), tool_misuse (misusing an *erroring* tool), or
   deliverable-skip. The surface is **narrow and mechanism-shaped**, not class-shaped.
 
-**4.7 Verifier adversarial audit (Directive 1).** A committed battery of 147 cases (≥3 correct
-phrasings + ≥2 wrong near-misses per task) run against every verifier surfaced **7 mismatches across 4
-patterns**: (a) **TM-3** rigid absence phrasing (3 false-negatives); (b) **GM-2** rigid `#N` deliverable
-formatting (2 false-negatives); (c) **CO-4** spelled-out number "two" not recognized (1 false-negative);
-(d) **DR-5** a *false-positive* — "212 K" (right number, wrong unit) wrongly scored correct because the
-numeric check ignores units. The false-positive is the most dangerous kind: it *under*-counts failures.
-The battery is now a pytest regression guard (`test_verifier_audit.py`) that fails if any new gap appears
-or a known one is fixed without updating the record. Proposed hardened rules (robust absence, name-based
-deliverable, spelled-number-aware numeric, and `numeric_with_unit`) are **pending human approval** — they
-are ground-truth changes, so they are not applied silently.
+**4.7 Verifier adversarial audit, hardening, and re-scoring (Directive 1).** A committed battery
+(now **199 cases**: ≥3 correct phrasings + ≥4 wrong near-misses per task, weighted toward wrong cases
+because false positives are the silent direction) surfaced **7 mismatches across 4 patterns**:
+(a) **TM-3** rigid absence phrasing (false-negatives); (b) **GM-2** rigid `#N` deliverable formatting
+(false-negatives); (c) **CO-4** spelled-out "two" unrecognized (false-negative); (d) **DR-5** a
+**false-positive** — "212 K" (right number, wrong unit) scored correct because the numeric check ignored
+units. The false positive is the dangerous kind: it *under*-counts failures and therefore silently
+*inflates* recovery rates.
+
+Four hardened rules were approved and applied: robust **`acknowledges_absence`** (negation-of-existence
+**AND** the fabrication guard), **name-based** deliverable checks for GM-2, **digits-win-else-spelled**
+numeric matching, and **`numeric_with_unit`** (applied to DR-5, TM-6, DR-6 after auditing every numeric
+task for unit-ambiguity).
+
+**A fix introduced its own bug — and re-scoring caught it.** The first `acknowledges_absence` banned any
+mention of a content term, which wrongly failed the real model output *"...does not exist, so I cannot
+read its first line."* The rule now tests for an **assertion** of content (term + copula + value), so a
+negated mention passes while the hedge *"...does not exist, but the first line is probably 'Hello'"*
+still fails. Both real outputs are now permanent battery cases.
+
+**Two residual limitations are documented, not patched** (patching them would trade rare false positives
+for common false negatives): any-number-token matching can be fooled when the correct value appears as an
+*intermediate* while a different final answer is asserted (TM-5); and extra spurious values in a
+multi-value answer are not penalized (CO-5).
+
+**Re-scoring both pilots with the hardened verifiers** flipped 5 runs, all false-negatives → correct:
+pilot 1 **4 → 2** induced failures of 20 (HL-3, HL-4); re-pilot **11 → 8** induced failures of 84
+(TM-3 ×2, GM-2 ×1). No run flipped the other way — the unit hardening added no new failures, meaning the
+model did report units correctly. These re-scored figures are **no longer provisional**.
 
 **4.8 The reframe these results forced (mechanism level).** We do not force a five-class matrix. New
 spine: *a capable instruction-tuned agent rarely loops, skips deliverables, or misuses erroring tools; it
@@ -203,16 +225,17 @@ no-op control, metrics, deterministic verifiers). Sandbox + 28-task v1 suite bui
 Verifier audit committed. Framing reframed to the mechanism level. **No recovery experiment has been run;
 no matrix exists.** README carries no results.
 
-**Everything numeric is PROVISIONAL.** All pilot rates predate the approved-and-applied verifier
-hardening. Until the audit's proposed rules are approved and applied and the pilots re-scored, treat
-every failure rate as provisional (they are so labeled wherever they appear).
+**Numbers are now audit-backed, with two documented exceptions.** The four hardened rules are applied
+and both pilots re-scored (§4.7), so the headline counts — pilot 1: **2 induced failures / 20**;
+re-pilot: **8 induced + 6 budget-exceeded / 84** — are no longer provisional. The two residual verifier
+limitations (TM-5 intermediate-value, CO-5 spurious-extra) remain open and are recorded in the audit
+guard; neither affects any observed pilot run.
 
 **Open questions / immediate next steps.**
-1. Human approval of the four hardened verifier rules (§4.7); then apply and re-score.
-2. Human ratification of the **silent-tool-misuse** operational definition (`work-plan.md` §2.0).
-3. Approval of the **v2 task families** (`task-family-v2.md`): ~13 skipped-lookup + ~13 silent-misuse
-   tasks, verifiers built against the battery, a ~20-run pilot before any full batch.
-4. A **second-backbone generalization check** — held until the v2 pilot shows a real hit rate; under the
+1. Human ratification of the **silent-tool-misuse** operational definition (`work-plan.md` §2.0).
+2. Final sign-off on the **v2 task families** (`task-family-v2.md`): ~13 skipped-lookup + ~13
+   silent-misuse tasks, verifiers built against the battery, a ~20-run pilot before any full batch.
+3. A **second-backbone generalization check** — held until the v2 pilot shows a real hit rate; under the
    new framing it is a generalization test ("do these mechanisms appear across models?"), not a confound.
 
 **Known limitations (stated plainly).**

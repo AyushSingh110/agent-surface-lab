@@ -63,24 +63,33 @@ built unless you explicitly ask.
 > **SUPERSEDED (pre-2026-07-21) — "detection is not repair."** Retired because DoVer/CausalFlow/CAR already
 > establish intervene-and-verify-by-replay. See `literature-review.md` Addendum.
 
-### 2.0 The taxonomy gap: *silent tool misuse* (proposed contribution)
+### 2.0 The taxonomy gap: *silent tool misuse* (RATIFIED 2026-07-22)
 
-**Operational definition (proposed).** A **silent tool misuse** is a step where the agent calls a *working* tool
-with **semantically invalid arguments the tool accepts without error**, and then treats the (well-formed but
+**Operational definition.** A **silent tool misuse** is a step where the agent calls a *working* tool with
+**semantically invalid arguments the tool accepts without error**, and then treats the (well-formed but
 meaningless) result as valid. Diagnostic criteria, all required:
 1. the tool returns a normal (non-error) result — no error string, no rejected/malformed call;
 2. the arguments are valid *in type/shape* but wrong *in meaning* for the task (e.g. `YYYYMMDD` integers passed to a
    numeric `subtract` as if they were day counts);
-3. the wrong final answer is *traceable to that tool result*, not invented from nothing.
+3. the wrong final answer is *traceable to that tool result*, not invented from nothing;
+4. **the tool result provides FALSE VALIDATION** — the agent receives a well-formed, non-error result from a
+   working tool and treats it as *authoritative confirmation* of a semantically meaningless computation.
 
 **Why it is a gap.** By ARIA's decision tree it is **not `tool_misuse`** (that requires error evidence — criterion
 1 rules it out) and **not `hallucination_loop`** (the number came from a *real* tool result, not from thin air). It
-falls between the classes. **The entire counterfactual-repair cluster is structurally blind to it:** DoVer,
-CausalFlow, and CAR localize failures using error/anomaly signals that, by criterion 1, *do not exist here* — there
-is nothing for their detectors to fire on. That blindness is itself a finding.
+falls between the classes. **Criterion 4 is what makes it tool-MEDIATED rather than an ordinary reasoning slip:**
+the agent is not merely wrong in its head — it is wrong *because a working tool handed back something that looked
+like evidence*, and the tool's silent acceptance functions as confirmation. Without criterion 4 a reviewer can
+collapse the whole category into "the model reasoned badly." **The entire counterfactual-repair cluster is
+structurally blind to it:** DoVer, CausalFlow, and CAR localize failures using error/anomaly signals that, by
+criterion 1, *do not exist here* — there is nothing for their detectors to fire on. That blindness is itself a
+finding.
 
-*(This definition is the human's to ratify or amend — it defines a matrix axis, so per CLAUDE.md §2 it is flagged,
-not adopted unilaterally.)*
+**Evidential status — stated honestly.** This mechanism currently rests on **one task shape (DR-6) with n=3**. It is
+an **OBSERVATION, not a validated class**. Establishing it as a class requires the v2 silent-misuse family (varying
+the tool and the kind of silent invalidity), including the controls that test whether it survives when the correct
+tool is available and when the unit is named. Until then it must be reported as a candidate mechanism with its n
+stated.
 
 ### 2.1 Idea A — Recovery, not detection
 

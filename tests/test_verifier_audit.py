@@ -20,13 +20,19 @@ from recovery_sandbox.tasks import KILL_TEST_TASKS
 # expected_pass=True  -> a CORRECT answer wrongly scored as failure (false-negative)
 # expected_pass=False -> a WRONG answer wrongly scored as pass (false-positive)
 KNOWN_GAPS = {
-    ("DR-5", False, "output='212 K'"),                              # unit-blind numeric match
-    ("TM-3", True, "output='notes.txt could not be found.'"),       # rigid absence phrase
-    ("TM-3", True, "output='The file does not exist.'"),
-    ("TM-3", True, "output='There is no such file.'"),
-    ("CO-4", True, "output='Two records are in Sales.'"),           # spelled-out number
-    ("GM-2", True, "file='1. Alice Chen (Sales)\\n2. Ben Ortiz (Engineering)\\n3. Carla Diop (Marketing)'"),
-    ("GM-2", True, "file='Comparison: Alice Chen, Ben Ortiz, Carla Diop'"),  # rigid #N formatting
+    # RESIDUAL LIMITATIONS (accepted, documented — not fixed, because every
+    # tightening we could apply would trade these rare false positives for far more
+    # common false negatives on legitimate answers):
+    #
+    # 1. Any-number-token matching: an output that contains the correct value as an
+    #    INTERMEDIATE while asserting a different final answer still passes. Fixing it
+    #    would require guessing which number is "the answer" (e.g. last-number-wins),
+    #    which breaks legitimate phrasings like "100 C equals 212 F".
+    ("TM-5", False, "output='14.2857 rounds to 14.30'"),
+    # 2. Extra spurious values in a multi-value answer are not penalized. Requiring
+    #    "no extra numbers" would reject legitimate answers that restate the inputs
+    #    (e.g. "10C=50F, 20C=68F, ...").
+    ("CO-5", False, "output='50, 68, 86, 104, 122'"),
 }
 
 
@@ -46,9 +52,11 @@ def test_battery_covers_every_task() -> None:
 
 
 def test_battery_has_enough_cases_per_task() -> None:
-    # Directive 1: >=3 correct and >=2 wrong plausible outputs per task.
+    # Rebalanced: >=3 correct and >=4 wrong per task. Wrong coverage is deliberately
+    # heavier than correct coverage because false positives (wrong scored as correct)
+    # silently inflate recovery rates, whereas false negatives are visible.
     for a in BATTERY:
         correct = sum(1 for c in a.cases if c.should_pass)
         wrong = sum(1 for c in a.cases if not c.should_pass)
         assert correct >= 3, f"{a.task_id}: only {correct} correct cases (need >=3)"
-        assert wrong >= 2, f"{a.task_id}: only {wrong} wrong cases (need >=2)"
+        assert wrong >= 4, f"{a.task_id}: only {wrong} wrong cases (need >=4)"

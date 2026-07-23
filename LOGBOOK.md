@@ -429,3 +429,39 @@ doc; superseded reasoning marked; provisional numbers labeled.
 (c) the v2 task families. Do NOT apply rules, build fixtures, or generate traces until approved. Then: apply hardened
 rules → re-score pilots → build v2 fixtures/verifiers-against-battery → v2 ~20-run pilot.
 
+---
+
+## 2026-07-22 — Battery rebalanced, 4 hardened rules APPLIED, both pilots RE-SCORED
+**What:** Human approved the 4 rules with amendments. Rebalanced the battery (≥4 wrong/task, weighted toward wrong
+cases), applied the rules, re-ran the audit, and re-scored both pilots.
+**Why:** False positives (wrong scored correct) silently inflate recovery rates and reach publication undetected;
+false negatives are at least visible. Wrong-case coverage was raised accordingly.
+**Applied rules (all human-approved, with amendments):**
+- `acknowledges_absence` (TM-3): negation-of-existence AND the fabrication guard AND no ASSERTED content.
+- Name-based deliverable (GM-2): checks the three record NAMES; code comment records that this deliberately accepts
+  names-without-comparison (a recorded relaxation, not drift).
+- `_candidate_numbers` **digits-win-else-spelled**: "Two records" (no digits) matches GT=2, while
+  "I called two tools and found 3 in Sales" (digit present) does NOT — the amendment case, now a battery case.
+- `numeric_with_unit`: applied to DR-5 (f/fahrenheit), TM-6 (k/kelvin), DR-6 (day/days) after auditing EVERY numeric
+  task for unit-ambiguity; the rest are unitless or unit-unambiguous (documented).
+**Result — audit:** battery now **199 cases** (87 correct / 112 wrong). Mismatches **7 → 2**. The 2 remaining are
+documented RESIDUAL LIMITATIONS, deliberately not patched (patching trades rare false positives for common false
+negatives): TM-5 any-number-token can match a correct value used as an INTERMEDIATE while a wrong final is asserted;
+CO-5 extra spurious values are not penalized. Recorded in `KNOWN_GAPS`. **pytest = 72 passed.**
+**Result — a fix introduced its own bug, caught by re-scoring:** the first `acknowledges_absence` banned any mention
+of a content term and wrongly failed the REAL output "…does not exist, so I cannot read its first line" (TM-3-r23).
+Rewritten to require an ASSERTION (term + copula + value) so a negated mention passes and the hedge
+"…but the first line is probably 'Hello'" still fails. Both real outputs added as permanent battery cases.
+**Result — RE-SCORED pilots (5 flips, all false-negatives → correct; none flipped the other way):**
+- Pilot 1: induced failures **4 → 2** of 20 (HL-3-r14, HL-4-r15).
+- Re-pilot: induced failures **11 → 8** of 84, budget_exceeded 6 (TM-3-r21, TM-3-r23, GM-2-r70 flipped).
+  Corrected by intended class: prompt_drift 5, context_overflow 3, tool_misuse **0**, goal_misalignment **0**,
+  hallucination_loop **0**; budget_exceeded CO-6 ×3, GM-3 ×3.
+- The unit hardening added NO new failures (DR-5 unaffected) — the model did report units correctly.
+- **The 8 remaining induced failures are exactly three behaviours:** DR-4 ×2 (skipped-lookup hallucination),
+  DR-6 ×3 (silent tool misuse), CO-1 ×3 (completion slip). This corroborates the mechanism-level reframe.
+**Status of numbers:** the re-scored counts are **no longer PROVISIONAL**; the 2 residual verifier limitations do
+not affect any observed pilot run. Docs updated (RESEARCH-NARRATIVE §4.4/4.6/4.7/§5).
+**Next:** HOLD. Show §2.0 (silent-tool-misuse definition) to the human for ratification; await v2 final sign-off.
+No v2 traces, no fixtures, no recovery driver until approved.
+
