@@ -205,7 +205,36 @@ pilot 1 **4 → 2** induced failures of 20 (HL-3, HL-4); re-pilot **11 → 8** i
 (TM-3 ×2, GM-2 ×1). No run flipped the other way — the unit hardening added no new failures, meaning the
 model did report units correctly. These re-scored figures are **no longer provisional**.
 
-**4.8 The reframe these results forced (mechanism level).** We do not force a five-class matrix. New
+**4.8 First recovery measurement — the 96-replay kill test, and two self-corrections (DIRECTIONAL, n=8).**
+The whole project to this point had built and hardened the *trace generator*; no intervention had ever
+been applied. The first sweep (8 labeled failing traces × 4 interventions × 3 replays) answered "does
+anything move?" — and it did (full memo: `docs/kill-test-recovery-memo.md`). But two follow-up checks
+then corrected two of the four headline claims — which is exactly what the checks exist for, and the
+corrections are themselves the most honest part of the story.
+
+What stands after correction: (i) interventions **move and differ by mechanism** — not a null;
+(ii) **silent tool misuse is unrecoverable by every arm** (0/9, incl. no_op) — no error signal for repair
+to latch onto, corroborating the §2.0 gap; (iii) **`reflect_and_retry` is robust** (0.90 hallucination,
+0.67 completion slip, never worse than no_op).
+
+**Correction A — the iatrogenic claim is RETRACTED.** The first sweep showed `requirement_injection`
+recovering hallucination 0/6 vs no_op 4/6, framed as "requirement injection is iatrogenic." A confound
+test (N=10, four phrasings of the *same* requirement) demolished that framing: recovery swings from
+**0.00 to 1.00 on wording alone** — (a) "report **only** …" → 0.00 (catastrophic), (b) neutral → 1.00,
+(c) "…use tools to verify" → 1.00, (d) terse "report …name" → 0.30. So requirement injection is **helpful
+when phrased neutrally** (the *best* arm, beating reflect) and harmful only via the surface cue "only".
+This is a *better* and more thesis-aligned finding — *the agent obeys the surface wording of the repair,
+not its intent* — and it makes **requirement phrasing a required experimental factor**, not a single arm.
+
+**Correction B — "rollback_2 recovers hallucination 1.00" is corrected to `restart_clean`.** rollback_2
+at k=1 (DR-4, DR-6) clamps to step 0, so it was functionally a clean restart of a 2-step task, not a
+2-step rewind; at N=10 it lands ~0.60 ≈ no_op. Genuine rollback was only exercised on the completion slip
+(k=6), where it recovered 0.00.
+
+**n=8, so nothing is a *result*.** But the premise is alive, sharpened, and — after two honest
+retractions — cleaner than before. Worth scaling to v2, with requirement-phrasing as a controlled factor.
+
+**4.9 The reframe these results forced (mechanism level).** We do not force a five-class matrix. New
 spine: *a capable instruction-tuned agent rarely loops, skips deliverables, or misuses erroring tools; it
 fails by (1) skipped-lookup hallucination and (2) silent tool misuse.* The key generalization: **failure
 rate is a property of task STRUCTURE, not failure class** — class averaging hid two near-deterministic
@@ -222,8 +251,10 @@ re-aimed at these two mechanisms.
 
 **Status.** Harness built and tested (recorder, replay+reconstruct, interventions incl. a first-class
 no-op control, metrics, deterministic verifiers). Sandbox + 28-task v1 suite built. Two pilots run.
-Verifier audit committed. Framing reframed to the mechanism level. **No recovery experiment has been run;
-no matrix exists.** README carries no results.
+Verifier audit committed and applied; pilots re-scored. Framing reframed to the mechanism level. **The
+first recovery kill test has now run (96 replays, n=8, directional):** interventions move, differ by
+mechanism, and show a verified iatrogenic case and a clean unrecoverable case — enough to justify scaling,
+not to claim an effect. README still carries no results (correctly — n=8 is a kill test).
 
 **Numbers are now audit-backed, with two documented exceptions.** The four hardened rules are applied
 and both pilots re-scored (§4.7), so the headline counts — pilot 1: **2 induced failures / 20**;

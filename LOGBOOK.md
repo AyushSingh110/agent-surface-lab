@@ -465,3 +465,60 @@ not affect any observed pilot run. Docs updated (RESEARCH-NARRATIVE §4.4/4.6/4.
 **Next:** HOLD. Show §2.0 (silent-tool-misuse definition) to the human for ratification; await v2 final sign-off.
 No v2 traces, no fixtures, no recovery driver until approved.
 
+---
+
+## 2026-07-22 — §2.0 ratified (crit. 4); FIRST recovery kill test run (96 replays, n=8, DIRECTIONAL)
+**What:** Amended §2.0 with criterion 4 (false validation) + honest n=3 status. Built the recovery driver
+(`paper-recovery/run_recovery.py`), the human labeled the 8 real failing traces, and ran the full cell sweep
+(8 traces × 4 interventions × N=3 = 96 replays). First time an intervention was ever applied to a trace.
+**Why:** Before scaling v2, measure whether the recovery machinery produces ANY signal (kill test).
+**Config:** qwen2.5:7b, temp 0.7, N=3, seed 20260721. Labels (human): DR-4 ×2 hallucination_loop (k=1),
+DR-6 ×3 silent_tool_misuse (k=1), CO-1 ×3 goal_misalignment/completion-slip (k=6). Raw:
+`data/repilot/recovery/results.json`. Memo: `docs/kill-test-recovery-memo.md`.
+**Result — DIRECTIONAL (n=8, NOT a result). Recovery rate by (intervention × mechanism):**
+- hallucination(n=2): no_op 0.67 | reflect 1.00 | rollback_2 1.00 | requirement_injection **0.00**
+- silent_tool_misuse(n=3): ALL arms **0.00** (incl. no_op) — unrecoverable; no error signal for repair to
+  latch onto (corroborates §2.0 gap).
+- completion_slip(n=3): no_op 0.00 | reflect **0.67** | rollback_2 0.00 | requirement_injection 0.00
+**Key findings:** (1) things MOVE — arms differ from each other and no_op, pattern depends on mechanism (NOT a
+null). (2) IATROGENIC CONFIRMED + mechanism verified by re-run: requirement_injection 0/6 vs no_op 4/6 on
+hallucination; no_op lets the model spontaneously re-call get_record(#77)→"Priya Nair", while injecting "report
+the manager's name" makes it answer immediately with a fabricated name (no further tool call). The intervention
+SUPPRESSES the model's own recovery. (3) reflect_and_retry never worse than no_op; only arm that fixes the
+completion slip. (4) rollback_2 fixes hallucination but not completion slip (loses partial sums).
+**Honest caveats:** n=8 directional; no_op already recovers hallucination 0.67 (easy); silent misuse n=3 one task
+shape; near-boundary cells (0.67s) need higher N. Scored by hardened audit-clean verifiers; TM-5/CO-5 residuals
+not involved. Verification cost 4 extra replays (data/repilot/recovery_verify).
+**Verdict:** recovery premise is ALIVE, not dead — worth scaling to v2. Docs updated (memo,
+RESEARCH-NARRATIVE §4.8/§5).
+**Next:** HOLD for human. Options: build v2 families (skipped-lookup + silent-misuse) to reach real n; raise N on
+near-boundary cells; second-backbone generalization check after v2 shows a real hit rate. No new traces until
+approved.
+
+---
+
+## 2026-07-22 — Two protective checks: iatrogenic finding RETRACTED, rollback_2 degeneracy corrected
+**What:** Ran the human's two pre-v2 checks. (1) Requirement-phrasing confound: DR-4 (n=2), N=10, 4 phrasings vs
+no_op. (2) rollback_2 degeneracy inspection on the 5 k=1 traces. (3) Raised N to 10 on the hallucination cell.
+**Why:** Both could invalidate headline claims; resolve before scaling.
+**Result — CONFOUND CONFIRMED; iatrogenic framing RETRACTED.** DR-4 recovery (20 replays/arm):
+no_op 0.55, reflect 0.90, rollback_2(=restart) 0.60; requirement phrasings — (a) "…report ONLY…" **0.00**,
+(b) neutral **1.00**, (c) "…use tools to verify" **1.00**, (d) terse no-'only' **0.30**. The effect does NOT
+reproduce across phrasings: the same requirement swings 0.00→1.00 on wording alone. So "requirement injection is
+iatrogenic" is WITHDRAWN. What holds: requirement injection is HELPFUL when phrased neutrally/permissively (best
+arm, beats reflect), and the surface cue "only" is catastrophic. New, more thesis-aligned finding (agent obeys the
+surface wording of the repair, not its intent) → requirement phrasing must be a CONTROLLED FACTOR in the paper,
+not one arm.
+**Result — rollback_2 degeneracy CORRECTED.** On all 5 k=1 traces (DR-4 ×2, DR-6 ×3), rollback_n(2) clamps to
+step 0 with resume-context == initial system+user → functionally `restart_clean`, not a rewind. So "rollback_2
+recovers hallucination 1.00" is corrected to "restart of a 2-step task" (≈0.60 at N=10 ≈ no_op). Genuine rollback
+only ran on CO-1 (k=6→4), recovered 0.00. The restart_clean-vs-rollback distinction is unmeasured at these short
+trace lengths; v2's longer traces will separate them.
+**Standing after correction:** interventions move + differ by mechanism (not null); silent tool misuse
+unrecoverable by all arms (0/9); reflect robust (never worse than no_op). Two of four first-sweep headline claims
+corrected by the checks — honest self-correction, logged.
+**Config:** qwen2.5:7b, temp 0.7, N=10 (hallucination); raw data/repilot/phrasing/results.json,
+data/repilot/recovery_verify. Docs updated: memo (retraction + phrasing table + rollback note), RESEARCH-NARRATIVE
+§4.8.
+**Next:** HOLD for human. v2 on hold until they direct; requirement-phrasing now a required v2 factor. No new traces.
+
