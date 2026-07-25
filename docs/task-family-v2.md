@@ -9,6 +9,35 @@ backbone held per Directive 3 — a generalization check for later, flagged not 
 **All rates below are hypotheses with reasoning, not measured facts.** They will be corrected by a
 pilot before any full batch. Existing v1 evidence: Mechanism 1 hit ~2/3 (DR-4), Mechanism 2 ~3/3 (DR-6).
 
+## IMPLEMENTATION STATUS (2026-07-25) — BUILT; pilot pending Ollama
+
+The families are implemented in `recovery_sandbox/v2_tasks.py` (fixtures in `v2_fixtures.py`, tools in
+`v2_tools.py`), with the orthogonal design directive 3 asked for:
+
+- **Skipped-lookup: `SL-01..SL-14`** (14 tasks) — reference chains of **trigger_depth 1, 2, 3** (the
+  skippable step at different chain positions → detection-lateness), GUESSABLE (common names) vs OPAQUE
+  (codes: Node-77, Root-9), reference types = manager chain, related-record, and a kv chain (SL-14).
+- **Silent tool misuse: `SM-01..SM-13`** (13 tasks) — date-diff (subtract on `YYYYMMDD`), clock-minutes
+  (subtract on `HHMM`), and percent (multiply by the integer of "20%"), some behind a kv lookup so the
+  misuse sits at step 0 or 1. Every correct GT is computed independently and cross-checked against the
+  fixtures in `tests/test_v2_sandbox.py`.
+- **Verifiers** are built on the hardened rules (numeric token/unit-aware `numeric_with_unit` for
+  date/clock; `numeric_exact` for percent; boundary-aware `fact_match` for names/departments) and were
+  validated per task against a correct answer, a wrong answer, an SL fabricated-name near-miss, and an SM
+  right-number/wrong-unit near-miss — the battery discipline applied before any run.
+- **`rollback_n` fixed:** it no longer silently clamps; at `k < n` the outcome self-reports as
+  `restart_clean`. A first-class `restart_clean` arm was added.
+
+**Repair phrasing is crossed in the RECOVERY sweep, not the generation pilot.** The generation pilot only
+measures hit rate per task shape. When we run recovery on the v2 failing traces, the requirement arm
+expands to four phrasings — **imperative-with-only / imperative-plain / declarative-neutral /
+declarative-lookup-permitting** — crossed with the intervention arms, and the phrasing effect is reported
+**across task shapes** to test whether the imperative/declarative hypothesis (currently DR-4-only)
+generalizes or was an artifact.
+
+*The hypothetical `M1-xx`/`M2-xx` rows below were the design sketch; the implemented `SL`/`SM` ids above
+supersede them.*
+
 ---
 
 ## Mechanism 1 — Skipped-lookup hallucination

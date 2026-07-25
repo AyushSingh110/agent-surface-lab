@@ -522,3 +522,32 @@ data/repilot/recovery_verify. Docs updated: memo (retraction + phrasing table + 
 §4.8.
 **Next:** HOLD for human. v2 on hold until they direct; requirement-phrasing now a required v2 factor. No new traces.
 
+---
+
+## 2026-07-25 — Attribution fix, phrasing→primary RQ, rollback_n fixed, v2 BUILT (pilot blocked on Ollama)
+**What:** Executed the human's three directives.
+**(1) Attribution corrected.** Retracted the "it's the word 'only'" read — (d) has no "only" yet still
+underperforms no_op. New working hypothesis (DR-4 only, flagged as such): **imperative action (a,d, below no_op)
+vs declarative/permissive constraint (b,c, → 1.00)**; "only" is an intensifier (0.30→0.00). Updated memo +
+RESEARCH-NARRATIVE §4.8.
+**(2) Phrasing elevated to a PRIMARY research question** in work-plan.md §2 alongside the recovery matrix and the
+silent-tool-misuse gap: *"the surface wording of a repair determines whether it works — imperative repairs can be
+worse than no repair at all."* Added the program-level convergence note: descriptions (toolseo) and repairs
+(recovery) are two surfaces where the same thesis holds.
+**(3) rollback_n FIXED (no silent clamp):** at k<n the outcome self-reports as `restart_clean`; added a first-class
+`restart_clean` arm. Tests updated (73→ then 81 with v2).
+**v2 BUILT (orthogonal design):** `recovery_sandbox/v2_fixtures.py`, `v2_tools.py`, `v2_tasks.py` —
+**14 skipped-lookup (SL-01..14)** varying trigger_depth 1/2/3 (detection-lateness), guessable vs opaque targets,
+reference types record-chain/related/kv-chain; **13 silent-misuse (SM-01..13)** date-diff/clock-minutes/percent,
+some behind a kv lookup. Verifiers on hardened rules, validated per task against correct/wrong/near-miss cases
+(`tests/test_v2_sandbox.py`). Every GT cross-checked against fixtures. `pytest = 81 passed`. v2 generation pilot
+driver `paper-recovery/pilot_v2.py` (measures hit rate by task/mechanism/trigger_depth; no interventions; no
+class labeling).
+**Result — v2 PILOT NOT RUN: Ollama server is DOWN** (ConnectionError to localhost:11434; 0 traces). This is the
+human's manual step (start Ollama). Everything else is complete and tested.
+**Config:** would-be pilot: qwen2.5:7b, temp 0.7, max_turns 8, 27 tasks × 3 = 81 runs → data/v2pilot.
+**Next:** human starts Ollama, then runs `python paper-recovery/pilot_v2.py --repeats 3`. Report hit rates by
+task shape (and trigger_depth) before the full batch. Then recovery sweep on v2 failing traces with the
+phrasing × arm × task-shape crossing. Second backbone still parked (revisit after v2 hit rates; phrasing finding
+raises its value). No full batch until hit rates approved.
+

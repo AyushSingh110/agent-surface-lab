@@ -86,19 +86,27 @@ than a property of requirement injection. Tested on DR-4 (n=2) at **N=10** with 
 | **(d)** "Report #150's manager's name." (no "only") | **0.30** | mildly harmful |
 
 **Verdict: the effect does NOT reproduce across phrasings — the iatrogenic framing is retracted.** The
-same intervention, same intent, swings from **0.00 to 1.00** on wording alone. What the data actually
-supports:
-- **Requirement injection is HELPFUL when phrased neutrally or permissively** (b, c → 1.00), beating both
-  no_op (0.55) and reflect_and_retry (0.90). A well-phrased requirement is the *best* arm on this failure.
-- **The word "only" is catastrophic** (a → 0.00): it drives the model to emit a name immediately and skip
-  the corrective lookup (the mechanism verified earlier is real, but it is triggered by the *cue*, not by
-  requirement injection as a class). A bare terse imperative (d) is mildly harmful (0.30), a weaker dose of
-  the same effect.
+same intervention, same intent, swings from **0.00 to 1.00** on wording alone.
 
-**This is a better, more honest finding than the retracted one, and it is dead-on the program thesis:**
-*the agent acts on the surface text of the instruction, not its meaning* — an identical requirement helps
-or destroys recovery depending on one word. The intervention taxonomy for the paper must therefore treat
-**requirement phrasing as a factor**, not treat "requirement injection" as a single arm.
+**Attribution (HYPOTHESIS from ONE task — DR-4; not an established effect).** It is *not* the word "only":
+(d) has no "only" and still lands at 0.30, below no_op's 0.55. The split that fits the data is
+**imperative action vs declarative constraint**:
+- **(a), (d) are imperatives** — they *command* the agent to "Report … the name," i.e. to act/answer now.
+  Both underperform no_op (0.00, 0.30).
+- **(b), (c) are declarative / permissive** — (b) *describes a property the answer must satisfy* ("the
+  answer must be …"), (c) *permits the corrective step* ("… use tools to verify"). Both hit 1.00.
+- **"only" is an intensifier, not the cause:** it deepens the imperative from 0.30 (d) to 0.00 (a).
+
+The plausible mechanism: an imperative to "report the name" pushes the model to emit a name immediately and
+skip the second lookup, while a declarative/permissive framing leaves room to keep working. **(c) is
+imperative-but-lookup-permitting**, so the operative factor may be more precisely *"does the phrasing
+license the corrective action vs demand an immediate answer."* This needs testing across many task shapes
+before it is anything more than a one-task hypothesis (v2, directive 3).
+
+**Why this matters:** it is dead-on the program thesis — *the agent acts on the surface FORM of the repair
+instruction, not its meaning.* An identical requirement helps or destroys recovery depending on
+imperative-vs-declarative wording. So **repair phrasing is a primary variable**, not a single "requirement
+injection" arm.
 
 ## Iatrogenic table (per-trace, strictly worse than no_op)
 

@@ -44,11 +44,25 @@ def reflect_and_retry(trace: TraceRecord, k: int, config: Config) -> Interventio
     )
 
 
+def restart_clean(trace: TraceRecord, k: int, config: Config) -> InterventionOutcome:
+    """Discard the trajectory and restart from the original task (a first-class arm)."""
+    return InterventionOutcome(
+        resume_messages=reconstruct(trace, 0),
+        resume_turn=0,
+        name="restart_clean",
+        note="discarded trajectory; restarted from the initial task",
+    )
+
+
 def rollback_n(n: int) -> Intervention:
     """Factory for a rollback intervention that rewinds n steps and resumes.
 
-    Rewinding below step 0 is clamped to 0 (restart from the initial context),
-    which is a legitimate — if blunt — recovery move.
+    **No silent clamping (fixed 2026-07-25).** When ``k < n`` a true n-step rewind is
+    impossible; rather than quietly clamping to step 0 and still calling itself
+    "rollback_n" (which previously made a 2-step task's restart masquerade as a
+    rollback), the outcome is **explicitly reported as `restart_clean`**. Downstream
+    reporting keys on ``InterventionOutcome.name``, so a clamped rollback is never
+    counted as a genuine rollback.
 
     Args:
         n: Number of steps to rewind (n>=1).
@@ -60,7 +74,15 @@ def rollback_n(n: int) -> Intervention:
         raise ValueError(f"rollback n must be >= 1, got {n}")
 
     def _rollback(trace: TraceRecord, k: int, config: Config) -> InterventionOutcome:
-        j = max(0, k - n)
+        if k - n < 0:
+            # Honest self-report: this is a clean restart, not an n-step rewind.
+            return InterventionOutcome(
+                resume_messages=reconstruct(trace, 0),
+                resume_turn=0,
+                name="restart_clean",
+                note=f"rollback_{n} at k={k} would underflow; reported as restart_clean",
+            )
+        j = k - n
         return InterventionOutcome(
             resume_messages=reconstruct(trace, j),
             resume_turn=j,

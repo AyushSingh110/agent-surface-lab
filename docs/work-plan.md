@@ -49,11 +49,27 @@ built unless you explicitly ask.
 >   without erroring (dates fed to `subtract` as raw integers: `20260915 − 20260721 = 194` instead of 56 calendar
 >   days). (DR-6, all 3 runs.)
 >
-> **Mechanism 2 is a taxonomy gap and a contribution in its own right** (see §2.0). All observed numbers are
-> **PROVISIONAL** pending the verifier audit (Directive 1). The **iatrogenic-rate contribution and the no-op
-> control remain the spine** — we re-aim them at failures that actually occur, not abandon them. Cite
+> **Mechanism 2 is a taxonomy gap and a contribution in its own right** (see §2.0). The **iatrogenic-rate
+> contribution and the no-op control remain the spine** — we re-aim them at failures that actually occur. Cite
 > DoVer/CausalFlow/CAR as the counterfactual-repair foundation; note (§2.0) they are structurally blind to
 > Mechanism 2.
+
+> **PRIMARY RESEARCH QUESTION added 2026-07-25 (from the recovery kill test): repair phrasing.**
+> *The surface wording of a repair determines whether it works — imperative repairs can be worse than no repair
+> at all.* On DR-4, the identical requirement swung recovery from **0.00 to 1.00** on wording alone: imperative
+> phrasings ("Report the name", "Report **only** the name") underperformed the no-op control, while declarative /
+> lookup-permitting phrasings ("The answer must be the name", "…use tools to verify") recovered fully. Working
+> hypothesis (**one task shape so far — DR-4**): the split is **imperative action vs declarative constraint**,
+> with "only" an intensifier, not the cause. This sits alongside the recovery matrix and the silent-tool-misuse
+> gap as a third pillar of the study, and is why v2 crosses **repair phrasing × intervention arm × task shape**
+> (see `docs/task-family-v2.md`).
+>
+> **Program-level convergence (say this in the intro).** This is the same thesis as `paper-toolseo`, on a second
+> surface. ToolSEO: an agent selects a tool on the surface text of its *description*, not its capability.
+> Recovery: an agent obeys the surface *form* of a repair instruction (imperative vs declarative), not its intent.
+> **Descriptions (selection) and repairs (recovery) are two surfaces where the same failure — acting on surface
+> cues rather than the underlying property — reappears.** That recurrence across independent studies is a
+> program-level result, not a coincidence.
 
 > **SUPERSEDED (2026-07-21) — "not all repair helps."** Prior spine: *"which intervention recovers which failure
 > class, and where standard self-correction actively harms,"* with the iatrogenic rate central. **Why superseded:**

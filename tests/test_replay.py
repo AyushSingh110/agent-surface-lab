@@ -85,11 +85,20 @@ def test_replay_cell_counts_failures(recorded_trace: TraceRecord) -> None:
     assert successes == [False, False]
 
 
-def test_rollback_resumes_earlier_turn(recorded_trace: TraceRecord) -> None:
+def test_rollback_underflow_reports_restart_clean(recorded_trace: TraceRecord) -> None:
+    # k=1 < n=2: no silent clamp — the outcome must self-report as restart_clean.
     outcome = rollback_n(2)(recorded_trace, 1, Config())
-    # Rewinding 2 from k=1 clamps to step 0 (initial context).
     assert outcome.resume_turn == 0
     assert outcome.resume_messages == recorded_trace.initial_messages
+    assert outcome.name == "restart_clean"  # NOT "rollback_2"
+
+
+def test_rollback_genuine_rewind_keeps_name(recorded_trace: TraceRecord) -> None:
+    # A 3-step trace at k=2 with n=2 is a real rewind to step 0, still named rollback_2.
+    # (recorded_trace has 3 steps; use k=2 so k-n=0 >= 0.)
+    outcome = rollback_n(2)(recorded_trace, 2, Config())
+    assert outcome.resume_turn == 0
+    assert outcome.name == "rollback_2"
 
 
 def test_reflect_injects_prompt_without_changing_prefix(recorded_trace: TraceRecord) -> None:

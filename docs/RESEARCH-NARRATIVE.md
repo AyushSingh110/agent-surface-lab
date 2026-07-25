@@ -217,14 +217,19 @@ What stands after correction: (i) interventions **move and differ by mechanism**
 to latch onto, corroborating the §2.0 gap; (iii) **`reflect_and_retry` is robust** (0.90 hallucination,
 0.67 completion slip, never worse than no_op).
 
-**Correction A — the iatrogenic claim is RETRACTED.** The first sweep showed `requirement_injection`
-recovering hallucination 0/6 vs no_op 4/6, framed as "requirement injection is iatrogenic." A confound
-test (N=10, four phrasings of the *same* requirement) demolished that framing: recovery swings from
-**0.00 to 1.00 on wording alone** — (a) "report **only** …" → 0.00 (catastrophic), (b) neutral → 1.00,
-(c) "…use tools to verify" → 1.00, (d) terse "report …name" → 0.30. So requirement injection is **helpful
-when phrased neutrally** (the *best* arm, beating reflect) and harmful only via the surface cue "only".
-This is a *better* and more thesis-aligned finding — *the agent obeys the surface wording of the repair,
-not its intent* — and it makes **requirement phrasing a required experimental factor**, not a single arm.
+**Correction A — the iatrogenic claim is RETRACTED, and its replacement is a hypothesis about wording.**
+The first sweep showed `requirement_injection` recovering hallucination 0/6 vs no_op 4/6, framed as
+"requirement injection is iatrogenic." A confound test (N=10, four phrasings of the *same* requirement)
+demolished that framing: recovery swings from **0.00 to 1.00 on wording alone** — (a) imperative
+"report **only** …name" → 0.00, (b) declarative "the answer must be …name" → 1.00, (c) "report …name;
+use tools to verify" → 1.00, (d) imperative "report …name" → 0.30. The tempting "it's the word only" read
+is *also* wrong: (d) has no "only" and still underperforms no_op (0.55). The pattern that fits is
+**imperative action (a, d) vs declarative/permissive constraint (b, c)** — a command to "report the name"
+makes the model answer immediately and skip the corrective lookup, while a declarative or lookup-permitting
+framing leaves room to keep working; "only" is an *intensifier* (0.30 → 0.00), not the cause. This is a
+**one-task hypothesis (DR-4)**, to be tested across task shapes in v2. It is more thesis-aligned than the
+retracted claim — *the agent acts on the surface FORM of the repair, not its meaning* — and it promotes
+**repair phrasing to a primary research variable**, not a single arm.
 
 **Correction B — "rollback_2 recovers hallucination 1.00" is corrected to `restart_clean`.** rollback_2
 at k=1 (DR-4, DR-6) clamps to step 0, so it was functionally a clean restart of a 2-step task, not a
