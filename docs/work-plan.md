@@ -101,11 +101,25 @@ structurally blind to it:** DoVer, CausalFlow, and CAR localize failures using e
 criterion 1, *do not exist here* — there is nothing for their detectors to fire on. That blindness is itself a
 finding.
 
-**Evidential status — stated honestly.** This mechanism currently rests on **one task shape (DR-6) with n=3**. It is
-an **OBSERVATION, not a validated class**. Establishing it as a class requires the v2 silent-misuse family (varying
-the tool and the kind of silent invalidity), including the controls that test whether it survives when the correct
-tool is available and when the unit is named. Until then it must be reported as a candidate mechanism with its n
-stated.
+**Evidential status — boundary-probed (2026-07-25, full batch + surface-form probes). Verdict: the trigger is
+SURFACE FORM, not "date" — the class is BROAD, with one honest caveat.** The surface-form probes settle it:
+- `YYYYMMDD` dates → `subtract` (misuse) — SM-01..05, 100%.
+- **`HHMM` bare-integer clock (SF-01/02) → `subtract(1430,915)=515`, `subtract(1305,1045)=260` — MISUSED.**
+- **dotted version `2.9`/`2.11` (SF-04) → `subtract(2.11,2.9)=-0.79` — MISUSED.**
+- **`HH:MM` colon-marked clock (SM-06) → converted to decimal hours first — CORRECT.**
+- raw counter where subtraction is genuinely right (SF-03 control) → `subtract=194` — CORRECT.
+
+So the mechanism is **"surface-form-mimics-operand": the model feeds an input to a general tool whenever the
+input's surface form resembles the tool's operand (a bare number / dotted numeric), even when the semantics require
+conversion — and it converts correctly only when the form is structurally marked (a colon).** This is broader and
+stronger than "date-specific." It is dead-on the program thesis (acting on surface form, not the underlying type).
+
+**Caveat (do not overclaim):** the *aggregate* silent-misuse rate is polluted. The `HH:MM` clock tasks that fail
+(SM-07→`add(75,80)=155`; SM-08→`(19+30-7)*60=2520`) fail via **muddled multi-step reasoning, not the clean
+surface-form mechanism**. So the CLEAN inducers of this class are: **date tasks (SM-01..05), `HHMM` (SF-01/02),
+dotted version (SF-04)**; colon-marked clock tasks are noise (mixed correct-conversion and garbled arithmetic) and
+must NOT be labeled as clean silent misuse. Percent tasks (SM-10..13) are handled correctly and serve, with SM-06
+and SF-03, as the **selectivity controls**.
 
 ### 2.1 Idea A — Recovery, not detection
 

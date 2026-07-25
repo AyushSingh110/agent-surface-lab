@@ -551,3 +551,84 @@ task shape (and trigger_depth) before the full batch. Then recovery sweep on v2 
 phrasing × arm × task-shape crossing. Second backbone still parked (revisit after v2 hit rates; phrasing finding
 raises its value). No full batch until hit rates approved.
 
+---
+
+## 2026-07-25 — v2 generation pilot RUN (81 runs); verifiers spot-checked clean; silent-misuse NARROWED
+**What:** Human started Ollama and ran the v2 pilot (27 tasks × 3 = 81 runs). Spot-checked 22 traces (11 tasks × 2)
+against actual model outputs before trusting the scoring.
+**Verifier check — CLEAN (first time no artifacts):** all 22 sampled traces scored correctly. SM-01 fail = genuine
+(`subtract(20260915,20260721)=194` reported as 194 days); SM-06/10/13 passes = genuine (model converted 09:15→
+decimal hours, "20%"→0.2 correctly); SL chain failures = genuine (model undercounts the chain by one, reports the
+depth-(n-1) name); SL-14 kv-chain pass genuine. No false positives (wrong scored correct) or false negatives found.
+**Hit rates (n=3/task, DIRECTIONAL):**
+- skipped_lookup **0.71** (30/42). Clean MONOTONIC detection-lateness trend: depth0 0.54, depth1 0.54, depth2 0.80,
+  depth3 1.00. Related-record tasks (SL-08/10/11) 1.00; depth≥2 manager chains 1.00; depth-1 guessable manager
+  (SL-01) 0.00 (weak); opaque depth-1 (SL-04/12) ~0.33.
+- silent_tool_misuse **0.49** (19/39) — but this HIDES a sharp split: **DATE tasks (SM-01..05) 5/5 at 100%**;
+  **CLOCK (SM-06..09) and PERCENT (SM-10..13) ~0%** (model converts correctly, does NOT misuse).
+**Key finding — silent tool misuse is NARROWER than §2.0 implied:** it reliably reproduces only for a semantic type
+with a plausible integer encoding (dates as YYYYMMDD). The model correctly converts times and percentages. Reframe
+as **date-arithmetic silent misuse**; clock/percent become CONTROLS proving the misuse is SELECTIVE, not blanket —
+which strengthens the characterization while narrowing the class. §2.0 evidential status updated.
+**Config:** qwen2.5:7b, temp 0.7, max_turns 8; 0 budget_exceeded (all tasks fit the budget). 49 failing traces at
+data/v2pilot/traces.jsonl (30 skipped_lookup + 19 silent_misuse), saved for human labeling + the recovery sweep.
+**Next:** HOLD for human approval of the full batch. Recommendations: SL — keep, drop/deprioritize SL-01 (weak),
+depth axis works for detection-lateness; SM — keep the 5 date tasks as the misuse inducers, KEEP clock/percent as
+explicit controls (do not treat as inducers). Then recovery sweep on labeled v2 failures with phrasing × arm ×
+task-shape. No full batch or second backbone until approved.
+
+---
+
+## 2026-07-25 — Surface-form boundary probes + FULL v2 batch (186 runs); silent misuse is BROAD
+**What:** Added 4 surface-form boundary probes (SF-01..04) and ran the full v2 batch (31 tasks × 6 = 186 runs).
+Spot-checked SF + clock + SL traces before trusting scoring.
+**BOUNDARY VERDICT — the trigger is SURFACE FORM, not dates (broad class).** Verified from actual tool calls:
+- SF-01 `HHMM` → `subtract(1430,915)=515`; SF-02 → `subtract(1305,1045)=260`; SF-04 version → `subtract(2.11,2.9)=-0.79`
+  — all MISUSED. SM-06 `HH:MM` → converts to decimal hours first (315, CORRECT). SF-03 control (subtraction is
+  right) → 194, CORRECT.
+- So the class is **"surface-form-mimics-operand"**: the model applies a general tool whenever the input's surface
+  form looks like the operand (bare integer/dotted number), even when semantics need conversion; converts correctly
+  only when the form is structurally marked (colon). Broader/stronger than "date-arithmetic". §2.0 updated.
+**CAVEAT (logged, not hidden):** the aggregate silent_misuse rate (0.54) is polluted — HH:MM clock tasks that fail
+(SM-07 `add(75,80)=155`; SM-08 `(19+30-7)*60=2520`) fail via MUDDLED reasoning, not the clean mechanism. CLEAN
+inducers = date (SM-01..05), HHMM (SF-01/02), version (SF-04). Colon clock = noise; percent + SM-06 + SF-03 =
+selectivity controls. Verifiers spot-checked CLEAN (no artifacts; SF-01 slightly noisy via self-correction, a known
+numeric_with_unit any-token residual).
+**Hit rates (n=6/task, DIRECTIONAL):** skipped_lookup 0.65 (55/84); silent_tool_misuse 0.54 (42/78);
+surface_form_probe 0.71 (17/24). Skipped-lookup detection-lateness (within-mechanism): depth1 0.52, depth2 0.80,
+depth3 1.00 — clean monotonic. SL failure mode verified = report the intermediate/own entity, skip the next lookup
+(SL-08). Weak SL tasks: SL-01/12/14 (0.00; model does the lookup / handles kv-chain). Date misuse 5/5 ~100%.
+**Config:** qwen2.5:7b, temp 0.7, max_turns 8, 0 budget. **114 failing traces** at data/v2batch/traces.jsonl
+(SL + date-misuse + SF). pytest 82 passed.
+**Next:** HOLD. Present failing traces grouped by trigger_depth for human labeling (k = step the lookup was skipped;
+RQ3 lives there). Then recovery sweep with phrasing × arm × task-shape × depth on the CLEAN pools. Second backbone
+after recovery confirmed on qwen. No sweep until human labels + approves.
+
+---
+
+## 2026-07-25 — Ambiguous-group scoring audit; labeling view + buckets; root README + LICENSE
+**What:** Per-trace scoring audit of the groups the human flagged, regenerated the labeling artifacts with factual
+bucket hints, and created the root README.md + Apache-2.0 LICENSE.
+**Audit result (verifiers SOUND — no false pos/neg; the issue is class-MIXING inside answer_correct=False):**
+- SM depth-0 (dates IN PROMPT, SM-02/03/04): cell collapses — ~1 clean misuse (SM-02-r92); the rest are REFUSALS
+  ("None of the provided functions can calculate days between dates" → goal_misalignment) and MUDDLED reasoning (gap).
+- SM depth-1 (dates via kv_lookup, SM-01/05): CLEAN 12/12 (subtract on YYYYMMDD → 194/80). **Finding: the misuse
+  fires when the date ARRIVES AS A TOOL RESULT, not when stated in the prompt** — tool-returned data primes "keep
+  feeding tools"; prompt-stated data invites reflection/refusal.
+- SL-04-r23: honest INCOMPLETE (reported the manager ID, refused to invent) → goal_misalignment, not the mechanism.
+- SL-07: mixed — r37 clean skip (own dept), r39 HALLUCINATION ("Sales", absent from all tool results), r40 refusal.
+- SF-04 (version): the surface-form TRIGGER fires (subtract 2.11-2.9=-0.79) but outputs are muddled (0/1/8/0.79) —
+  NOT clean; version is a noisy inducer → gap.
+**Re-sorted pools (bucket counts over 114 failing):** clean surface-form ≈ 13 date-subtract + 10 hhmm ≈ 23 (not 46);
+skipped_lookup candidates ≈ 52 skip-or-assert (gr1 24 / gr2 22 / gr3 6) minus scattered hallucination/incomplete;
+plus 10 refusals + 24 muddled to be labeled as their own classes. Pool shrank and re-sorted, as the human predicted.
+**Artifacts:** `data/v2batch/labeling_view.md` (ALL 114 failing traces, grouped by mechanism×depth, each with a
+factual `bucket=` hint — clean-date-subtract / clean-hhmm-subtract / REFUSAL / INCOMPLETE / skip-or-assert(gr=N) /
+muddled — NOT a class) + `labels.template.json`.
+**README + LICENSE:** wrote a professional root `README.md` (honest per CLAUDE.md §5 — aggregate/method only, raw
+data noted as local-only, findings labeled DIRECTIONAL/small-n, retractions acknowledged) and `LICENSE` (Apache-2.0,
+Copyright 2026 Ayush Singh).
+**Next:** human labels per-trace from the view (class + k, flag gap/hallucination/goal_misalignment/unclear). Then
+recompute compute-plan per-cell n from the LABELED clean pool and show before running the recovery sweep. No sweep,
+no second backbone until then.
+

@@ -82,6 +82,21 @@ def test_sm_date_unit_guard() -> None:
     assert v(_trace(sm01.prompt), "It is 56 days.") is True
 
 
+def test_surface_form_probes() -> None:
+    from recovery_sandbox.v2_tasks import SURFACE_FORM_PROBE
+    sf = [t for t in V2_TASKS if t.mechanism == SURFACE_FORM_PROBE]
+    assert len(sf) == 4
+    by_id = {t.id: t for t in sf}
+    # correct answers verify
+    assert by_id["SF-01"].make_verifier(Path("."))(_trace(), "It ran 315 minutes.") is True
+    assert by_id["SF-03"].make_verifier(Path("."))(_trace(), "The increase is 194.") is True
+    assert by_id["SF-04"].make_verifier(Path("."))(_trace(), "That is 2 increments.") is True
+    # the silent-misuse values must FAIL (surface-form probe would flag them if the model misuses)
+    assert by_id["SF-01"].make_verifier(Path("."))(_trace(), "It ran 515 minutes.") is False  # 1430-915
+    assert by_id["SF-02"].make_verifier(Path("."))(_trace(), "It lasted 260 minutes.") is False  # 1305-1045
+    assert by_id["SF-04"].make_verifier(Path("."))(_trace(), "The difference is 0.21.") is False  # decimal
+
+
 def test_v2_tools_deterministic(tmp_path: Path) -> None:
     tools = build_v2_tools(tmp_path)
     r = tools["get_record"].fn({"id": 201})

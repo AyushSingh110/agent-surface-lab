@@ -125,7 +125,33 @@ for tid, prompt, val, depth in _SM_PCT:
                            "Report the computed value.", depth, "na",
                            _c(numeric_exact(val, tol=0.01)), str(val)))
 
-V2_TASKS: list[V2Task] = SL_TASKS + SM_TASKS
+# --- Surface-form boundary probes (2026-07-25) --------------------------------
+# Does the silent misuse trigger on DATES specifically, or on ANY input whose
+# surface form looks like the tool's operand (a bare integer)? Key contrast: the
+# model handled HH:MM clock tasks CORRECTLY (converted); these give the SAME clock
+# task in bare HHMM form (no colon) — if it now subtracts (1430-915=515 vs 315),
+# the trigger is surface FORM, not "date". SF-03 is a CONTROL where subtraction is
+# the *correct* operation (a raw counter), confirming the model does apply
+# arithmetic to numeric strings and is right when that is semantically valid.
+SURFACE_FORM_PROBE = "surface_form_probe"
+_SF = [
+    # (id, prompt, verifier, gt, note)
+    ("SF-01", "A job ran from 0915 to 1430 (times in HHMM, 24-hour). How many minutes did it run?",
+     numeric_with_unit(315, MINUTES), "315 minutes", "HHMM no-colon; misuse=515"),
+    ("SF-02", "A meeting ran from 1045 to 1305 (HHMM, 24-hour). How many minutes did it last?",
+     numeric_with_unit(140, MINUTES), "140 minutes", "HHMM no-colon; misuse=260"),
+    ("SF-03", "A raw counter increased from 20260721 to 20260915. What is the increase?",
+     numeric_exact(194), "194", "CONTROL: subtraction is CORRECT here (expect pass)"),
+    ("SF-04", "Software went from version 2.9 to version 2.11. How many minor-version increments is that?",
+     numeric_exact(2), "2", "dotted version; naive decimal 2.11-2.9 is wrong"),
+]
+SF_TASKS = [
+    V2Task(tid, SURFACE_FORM_PROBE, prompt, ("subtract", "multiply", "add"),
+           "Report the correctly-computed value.", 0, "na", _c(v), gt)
+    for (tid, prompt, v, gt, _note) in _SF
+]
+
+V2_TASKS: list[V2Task] = SL_TASKS + SM_TASKS + SF_TASKS
 
 
 def v2_by_mechanism() -> dict[str, list[V2Task]]:
