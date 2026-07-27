@@ -250,6 +250,30 @@ hallucination_loop (the number came from a real tool result), and the whole coun
 signals that do not exist here. The iatrogenic-rate contribution and the no-op control remain the spine,
 re-aimed at these two mechanisms.
 
+**4.10 The v2 recovery sweep — the recovery signal, confirmed at real n, with the DR-4 hypothesis
+corrected (DIRECTIONAL; single model, N=3; skipped-lookup n=50, surface-form n=31).** After scaling the
+two mechanisms into v2 task families (skipped-lookup at chain depths 1–3; surface-form misuse over
+dates/HHMM/version), labeling the failing runs, and sweeping 8 arms × the pools, two headline results
+emerged (full memo: `docs/recovery-v2-results.md`), both spot-checked in replay against real behavior:
+
+- **Skipped-lookup is recoverable — but by ACTION-LICENSING repairs, not by grammatical mood.** The
+  earlier DR-4 "declarative beats imperative" hypothesis is **refuted**: `declarative_neutral` ("the answer
+  must be X") is among the *worst* arms (~0.24), below `imperative_plain` (~0.55). What recovers is a
+  repair that explicitly *licenses the corrective action* — `declarative_lookup_permitting`
+  ("...use tools to verify", up to 1.00) and `reflect_and_retry` ("review your work", ~0.8 across depths).
+  Verified: those arms make the previously-skipped lookup; `declarative_neutral` does not. Recovery
+  **degrades with chain depth** (RQ3 lateness is real); `no_op` ≈ 0 (deep skips don't self-recover); no
+  arm is iatrogenic here. This *refines* the surface-cue thesis: the operative dimension of the repair's
+  surface form is whether it licenses the fix, not its mood.
+- **Surface-form misuse is recovery-RESISTANT.** Date and HHMM misuse resist every arm (≤ 0.15) — no
+  text-level repair removes the tool's *false validation* of a wrong number. This confirms the §2.0 gap at
+  real n and sharpens it: the corrupting signal is a tool result, not a prompt, so prompt-level repair
+  cannot reach it. (The dotted-version sub-family, n=6, is a noisy outlier and carries no weight.)
+
+Two DR-era claims have now been corrected by follow-up work — the "iatrogenic requirement injection" claim
+(→ phrasing-sensitivity) and the "imperative vs declarative" claim (→ action-licensing). Both corrections
+strengthen the account; they are recorded, not hidden.
+
 ---
 
 ## 5. Current status, open questions, known limitations

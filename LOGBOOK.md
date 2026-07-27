@@ -632,3 +632,33 @@ Copyright 2026 Ayush Singh).
 recompute compute-plan per-cell n from the LABELED clean pool and show before running the recovery sweep. No sweep,
 no second backbone until then.
 
+
+---
+
+## 2026-07-27 — v2 RECOVERY SWEEP run (1692 replays); DR-4 hypothesis corrected -> action-licensing
+**What:** Validated codex's labels.json (clean; 1 flag was a validator false-alarm; BOM stripped), built +
+dry-checked the v2 recovery driver (paper-recovery/run_recovery_v2.py, 8 arms + per-task requirement cores),
+human ran the full sweep (81 traces, 8 arms, N=3 = 1692 replays), then I broke it down by depth/form and
+spot-checked replays with full output capture before trusting it.
+**Verifiers:** spot-check confirmed the numbers reflect real behavior (genuine extra get_record on recovery,
+genuine no-lookup re-assertion on failure); no false positives found.
+**RESULT 1 (skipped_lookup, n=50, depths 1-3) — recoverable; DR-4 imperative/declarative REFUTED:**
+- Recovery by arm x depth: reflect 0.75/0.79/0.89; declarative_lookup_permitting 1.00/0.83/0.39;
+  imperative_plain 0.62/0.51/0.00; imperative_only 0.67/0.12/0.00; declarative_neutral 0.24/0.29/0.00;
+  rollback_2/restart_clean 0.25/0/0; no_op 0.03/0/0.
+- declarative_NEUTRAL is among the WORST (below imperative_plain) -> "declarative>imperative" (DR-4) is refuted.
+  Driver is ACTION-LICENSING: arms that explicitly license the corrective step (lookup_permitting "use tools to
+  verify"; reflect "review your work") recover; bare constraint/command does not. RQ3 lateness present (recovery
+  degrades with depth). No iatrogenic harm on skipped_lookup.
+**RESULT 2 (surface_form_misuse, n=31) — recovery-RESISTANT:**
+- date (n=13) and hhmm (n=11) misuse resist EVERY arm (<=0.15). No text repair removes the tool's false
+  validation (corrupting signal is a tool result, not a prompt) -> confirms/sharpens the s2.0 gap at real n.
+- version (n=6) noisy outlier (no_op already 0.28); carries no weight.
+**Caveats:** DIRECTIONAL, single model, N=3; 119 near-boundary cells (mid-range rates need higher N; extremes are
+robust); reflect/rollback/restart on n=8/8/6 breadth subset.
+**Docs:** docs/recovery-v2-results.md (full memo+tables); RESEARCH-NARRATIVE s4.10; work-plan phrasing RQ refined
+to action-licensing. Raw: data/v2batch/recovery_v2/results.json.
+**Next:** HOLD for human. Options: (1) raise N on near-boundary mid-range cells; (2) SECOND-BACKBONE generalization
+check is now SEQUENCEABLE (recovery confirmed on qwen) -> replicate "action-licensing recovers skipped-lookup" and
+"surface-form misuse is recovery-resistant" on a 2nd model. Two DR-era claims now corrected (iatrogenic->phrasing;
+imperative/declarative->action-licensing) - both logged, not hidden.

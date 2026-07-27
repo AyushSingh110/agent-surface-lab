@@ -54,15 +54,16 @@ built unless you explicitly ask.
 > DoVer/CausalFlow/CAR as the counterfactual-repair foundation; note (§2.0) they are structurally blind to
 > Mechanism 2.
 
-> **PRIMARY RESEARCH QUESTION added 2026-07-25 (from the recovery kill test): repair phrasing.**
-> *The surface wording of a repair determines whether it works — imperative repairs can be worse than no repair
-> at all.* On DR-4, the identical requirement swung recovery from **0.00 to 1.00** on wording alone: imperative
-> phrasings ("Report the name", "Report **only** the name") underperformed the no-op control, while declarative /
-> lookup-permitting phrasings ("The answer must be the name", "…use tools to verify") recovered fully. Working
-> hypothesis (**one task shape so far — DR-4**): the split is **imperative action vs declarative constraint**,
-> with "only" an intensifier, not the cause. This sits alongside the recovery matrix and the silent-tool-misuse
-> gap as a third pillar of the study, and is why v2 crosses **repair phrasing × intervention arm × task shape**
-> (see `docs/task-family-v2.md`).
+> **PRIMARY RESEARCH QUESTION (repair phrasing) — REFINED 2026-07-27 by the v2 sweep.**
+> *The surface wording of a repair determines whether it works.* The DR-4 working hypothesis
+> ("imperative action vs declarative constraint") was **REFUTED at real n** by the v2 recovery sweep
+> (skipped-lookup, n=50, depths 1–3): `declarative_neutral` ("the answer must be X") is among the *worst*
+> arms (~0.24), *below* `imperative_plain` (~0.55) — so grammatical mood does not explain recovery. The
+> generalizable driver is **action-licensing**: repairs that explicitly license the corrective step recover
+> (`declarative_lookup_permitting` "…use tools to verify" up to 1.00; `reflect_and_retry` ~0.8 across
+> depths), while a bare constraint or command does not. Recovery degrades with chain depth (RQ3 lateness).
+> This is the third pillar alongside the recovery matrix and the silent-tool-misuse gap. Full result:
+> `docs/recovery-v2-results.md`.
 >
 > **Program-level convergence (say this in the intro).** This is the same thesis as `paper-toolseo`, on a second
 > surface. ToolSEO: an agent selects a tool on the surface text of its *description*, not its capability.

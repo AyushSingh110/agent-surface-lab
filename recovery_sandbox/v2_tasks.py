@@ -154,6 +154,29 @@ SF_TASKS = [
 V2_TASKS: list[V2Task] = SL_TASKS + SM_TASKS + SF_TASKS
 
 
+# Per-task requirement CORE phrases (the property the answer must have), for the
+# repair-phrasing crossing in the recovery sweep. Each is slotted into the 4 phrasing
+# templates (imperative-only / imperative-plain / declarative-neutral /
+# declarative-lookup-permitting). Kept task-specific so the imperative-vs-declarative
+# contrast is meaningful rather than generic.
+REQUIREMENT_CORES: dict[str, str] = {
+    "SL-01": "the manager's name", "SL-02": "the manager's manager's name",
+    "SL-03": "the manager's manager's manager's name", "SL-04": "the manager's name",
+    "SL-05": "the manager's manager's name", "SL-06": "the manager's name",
+    "SL-07": "the manager's department", "SL-08": "the related record's department",
+    "SL-09": "the related record's manager's name", "SL-10": "the related record's name",
+    "SL-11": "the related record's department", "SL-12": "the manager's name",
+    "SL-13": "the manager's manager's name", "SL-14": "the final chained value",
+    "SM-01": "the number of calendar days", "SM-02": "the number of calendar days",
+    "SM-03": "the number of calendar days", "SM-04": "the number of calendar days",
+    "SM-05": "the number of calendar days", "SM-06": "the number of minutes",
+    "SM-07": "the number of minutes", "SM-08": "the number of minutes",
+    "SM-09": "the number of minutes",
+    "SF-01": "the number of minutes", "SF-02": "the number of minutes",
+    "SF-04": "the number of minor-version increments",
+}
+
+
 def v2_by_mechanism() -> dict[str, list[V2Task]]:
     out: dict[str, list[V2Task]] = {}
     for t in V2_TASKS:
