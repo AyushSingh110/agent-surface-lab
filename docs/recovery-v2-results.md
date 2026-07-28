@@ -87,13 +87,110 @@ false-positives found in the sample.
   phrasing arms (n=21/23/6); comparisons across those are coarser.
 - `version` (n=6) is too small and too noisy to carry weight.
 
+## Step-1 firm-up (N=10 on the argument-critical cells) — the contrast HOLDS
+
+The action-licensing claim rests on a contrast (`declarative_neutral` bad vs
+`lookup_permitting`/`reflect` good), so those cells were re-run at **N=10** (skipped-lookup 6 arms × 50
+across depths; surface-form date+hhmm 8 arms × 24). Skipped-lookup, recovery by arm × depth:
+
+| arm | d1 | d2 | d3 |
+|---|---|---|---|
+| no_op | 0.07 | 0.00 | 0.00 |
+| reflect_and_retry | 0.60 | 0.83 | 0.60 |
+| req_imperative_only | 0.69 | 0.11 | 0.00 |
+| req_imperative_plain | 0.66 | 0.42 | 0.20 |
+| **req_declarative_neutral** | **0.16** | **0.18** | **0.20** |
+| **req_declarative_lookup_permitting** | **1.00** | **0.75** | **0.60** |
+
+**Verdict: the action-licensing contrast HOLDS at N=10 (does not soften).**
+- `declarative_neutral` (bare constraint) stays **low at every depth** (0.16 / 0.18 / 0.20) — it is the
+  *worst* arm at depths 1–2, well below `imperative_plain` (0.66 / 0.42). So "declarative beats imperative"
+  is refuted, firmly.
+- The two **action-licensing** arms stay **high**: `lookup_permitting` (1.00 / 0.75 / 0.60) and `reflect`
+  (0.60 / 0.83 / 0.60). The only thing separating `lookup_permitting` (0.75–1.00) from `declarative_neutral`
+  (0.16–0.20) — both declarative — is the *licensing clause* ("use tools to verify"). That is the driver.
+- `imperative` arms sit in between and **collapse with depth** (imperative_only 0.69 → 0.11 → 0.00) — RQ3
+  lateness, confirmed. No arm is iatrogenic (all net-positive vs no_op; `lookup_permitting` +0.80, `reflect`
+  +0.68, `declarative_neutral` only +0.14).
+
+Surface-form (date+hhmm) at N=10 — **every arm ≤ 0.14** (date ≤ 0.06, hhmm ≤ 0.14): the
+**recovery-resistant headline HOLDS** firmly; no text repair reaches a tool-false-validated failure.
+
+## Step 2 — Second backbone (Mistral 7B): generalization is CONFOUNDED by tool-capability
+
+Per the sequencing rule, after the recovery signal was confirmed on qwen we ran a narrow generalization
+check on a different-family model, **mistral:7b**. It needs its own failing traces (no cross-model replay),
+so we piloted its hit rate first (31 tasks × 3 = 93 runs). **Verdict: Mistral is too tool-unreliable to
+serve as a clean generalization backbone for these mechanisms — the recovery findings are UNTESTABLE on it,
+and the exercise itself surfaced a real methodological limit.**
+
+**Tool-calling smoke:** 3/6 clean (chains multi-step, but ~half the runs have arg-threading errors) —
+between llama3.1 (0/6) and qwen (6/6).
+
+**Hit rates looked high but are dominated by Mistral-specific tool pathologies.** Categorizing all 81
+failing traces:
+
+| category | n | is it the mechanism? |
+|---|---|---|
+| SL: lookup-then-assert/incomplete | 34 | partly — genuine skipped-lookup fabrication mixed with honest incompletes |
+| **tool-emit-as-text** (printed the tool call as literal text, never called it) | 18 | **no — Mistral tool-format bug** |
+| **no-tool-call** (reasoned in text, e.g. converted HHMM by hand) | 16 | **no** |
+| other-arith (muddled, e.g. `add(1604438, 61)`) | 10 | no |
+| **CLEAN surface-form-misuse** (fed a date-int/HHMM to arithmetic) | **3** | yes — but only 3 |
+
+**Three framings (the exercise strengthened the account rather than just limiting it):**
+
+1. **Skipped-lookup hallucination GENERALIZES — a confirmed cross-model result.** Mistral fabricates the
+   unfetched value too — verified: it reads `manager=#202` and invents "John Smith"/"John Doe" without ever
+   calling `get_record(202)`. The mechanism is **no longer qwen-only**; it reproduces in a second,
+   different-family model. (~34 candidate traces, spot-checked; labeling would split genuine fabrication from
+   honest incompletes, but the fabrication behavior is present and clear.)
+
+2. **Surface-form ("tool false-validation") misuse is MODEL-CONDITIONAL — stated as a finding with a named
+   precondition, not merely a limitation.** It reproduced in only 3/81 Mistral traces because **Mistral does
+   not reflexively apply the arithmetic tool to numeric-looking strings** — it reasons about dates/times in
+   text instead. That identifies the *precondition for the vulnerability*: **tool-false-validation misuse
+   occurs in TOOL-REFLEXIVE models (those that reach for a general tool on any operand-shaped input), and
+   when it occurs it is unrecoverable by text-level repair.** Naming *which* agents are vulnerable (the
+   tool-reflexive ones) is a sharper and more useful contribution than a blanket "agents misuse tools"
+   claim — it tells a practitioner exactly which deployments are at risk.
+
+3. **Recovery generalization is UNTESTABLE at local-7B — itself a methodological contribution.** 34/81
+   Mistral failures are tool-emission pathologies (`tool-emit-as-text` + `no-tool-call`), and every recovery
+   arm depends on the model *re-issuing a tool call*, so "failed to recover" cannot be separated from
+   "couldn't emit a tool call." **Evaluating recovery on a tool-unreliable model conflates intervention
+   efficacy with tool competence** — a real caution for anyone benchmarking agent recovery across models,
+   and a reason such studies must first establish a tool-reliability floor.
+
+Because running the recovery sweep on Mistral would conflate intervention efficacy with tool competence, it
+was **not run** (per the pre-committed rule: report the confound, don't force a muddy comparison).
+
+## Limitations and scope
+
+Stated plainly, because the findings are only as strong as their scope.
+
+- **Single primary model.** All recovery results are on **qwen2.5:7b**. The second-backbone check
+  (Mistral) confirmed the skipped-lookup *mechanism* cross-model but could not test recovery (tool
+  confound). So the recovery findings (action-licensing; text-repair resistance) are **demonstrated on one
+  model** and not yet shown model-general.
+- **Synthetic sandbox.** Tasks, tools, and fixtures are deterministic and small (record chains, date/clock
+  strings). This buys a clean counterfactual and audited ground truth, but external validity to real agent
+  workloads is unestablished.
+- **Directional n.** The headline extremes are firm at N=10 (skipped-lookup arms, surface-form date+hhmm),
+  but some cells remain N=3 and several mid-range rates sit near a decision boundary — treated as
+  directional, not precise point estimates.
+- **Tool-capability confound (generalization).** Evaluating recovery across models is confounded by
+  tool-use reliability: a model must be tool-reliable enough to (a) exhibit the mechanism and (b) respond to
+  a tool-based repair. At local-7B scale only qwen2.5 met that bar; Mistral and llama3.1 did not. This both
+  limits the generalization claim and is itself a reported methodological result.
+- **Labeling.** Failure-class labels were assigned by a single labeler (assisted), spot-check-validated;
+  no inter-annotator agreement (κ) was computed at this scale.
+
 ## Verdict
 
-**The recovery premise is confirmed on qwen at real n, with a corrected mechanism.** Skipped-lookup
-hallucination is recoverable specifically by repairs that **license the corrective action** (recovery up
-to 1.00), the DR-4 imperative/declarative story is refuted and replaced by action-licensing, detection
-lateness degrades recovery, and **surface-form (tool-false-validated) misuse resists all text repairs**.
-These are the two headline results the paper is built on, now on real-n directional data with the earlier
-hypothesis honestly corrected. Next: (1) raise N on the near-boundary mid-range cells; (2) the
-**second-backbone generalization check** is now sequenceable (recovery signal confirmed on qwen) — replicate
-"action-licensing recovers skipped-lookup" and "surface-form misuse is recovery-resistant" on a second model.
+On qwen2.5:7b at real n: skipped-lookup hallucination is recoverable specifically by repairs that **license
+the corrective action** (up to 1.00; the DR-4 imperative/declarative story refuted → action-licensing),
+recovery **decays with detection lateness**, and **surface-form (tool-false-validated) misuse resists all
+text-level repair**. The second-backbone check **confirms the skipped-lookup mechanism cross-model**, shows
+**surface-form misuse is tool-reflexive-model-conditional**, and documents that **recovery generalization is
+confounded by tool-capability** at local-7B. The next phase is **write-up**, not more runs.

@@ -1,0 +1,9 @@
+# Second-backbone (generalization check) run config — Mistral 7B.
+# Different model family from the pinned qwen2.5:7b, to test whether the two
+# confirmed findings (action-licensing recovers skipped-lookup; surface-form
+# misuse is recovery-resistant) are model-general or qwen-specific.
+model_tag: mistral:7b
+seed: 20260721
+temperature: 0.7
+n_replays: 3
+max_turns: 8

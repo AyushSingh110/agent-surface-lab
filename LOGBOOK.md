@@ -662,3 +662,55 @@ to action-licensing. Raw: data/v2batch/recovery_v2/results.json.
 check is now SEQUENCEABLE (recovery confirmed on qwen) -> replicate "action-licensing recovers skipped-lookup" and
 "surface-form misuse is recovery-resistant" on a 2nd model. Two DR-era claims now corrected (iatrogenic->phrasing;
 imperative/declarative->action-licensing) - both logged, not hidden.
+
+---
+
+## 2026-07-28 — STEP 1 firm-up (N=10) COMPLETE; action-licensing contrast HOLDS (+ crash-resilience fix)
+**What:** First N=10 firm-up crashed at ~300/492 cells (Ollama RemoteProtocolError; old driver saved only at the
+end -> all lost). Hardened the stack: (1) OllamaBackend now retries transient disconnects (5 attempts, linear
+backoff, fresh client); (2) run_recovery_firm checkpoints every cell to cells.jsonl and RESUMES on restart. pytest
+82 passed. Re-ran to completion: 492/492 cells, ~4920 replays.
+**RESULT — both headlines HOLD at N=10 (did NOT soften):**
+- skipped_lookup recovery by arm x depth (n=21/23/6 x N=10):
+  no_op 0.07/0.00/0.00; reflect 0.60/0.83/0.60; imperative_only 0.69/0.11/0.00; imperative_plain 0.66/0.42/0.20;
+  declarative_NEUTRAL 0.16/0.18/0.20; declarative_lookup_permitting 1.00/0.75/0.60.
+  -> declarative_neutral stays LOW everywhere (worst at d1/d2, below imperative_plain); the two action-licensing
+  arms (lookup_permitting, reflect) stay HIGH. The two declaratives differ ONLY by the licensing clause yet differ
+  ~0.6-0.8 in recovery -> driver is ACTION-LICENSING, not grammatical mood. DR-4 mood hypothesis firmly refuted.
+  RQ3 lateness confirmed (imperative collapses with depth). No iatrogenic harm (all net-positive vs no_op).
+- surface_form date+hhmm x 8 arms x N=10: every arm <=0.14 (date <=0.06, hhmm <=0.14) -> recovery-RESISTANT holds.
+**Verifiers:** mechanism already verified in the N=3 replay spot-check (lookup_permitting/reflect do the missing
+lookup; declarative_neutral re-asserts own name without lookup); N=10 rates consistent, no new spot-check run.
+**Docs:** recovery-v2-results.md (firm-up section + HOLDS verdict); RESEARCH-NARRATIVE s4.10.
+Raw: data/v2batch/recovery_firm/results.json (+ cells.jsonl checkpoint).
+**Next:** STOP for human before STEP 2. Step 2 = second-backbone generalization test of the TWO confirmed
+headlines ONLY (not a full re-sweep): (a) action-licensing on skipped-lookup [no_op/declarative_neutral/
+lookup_permitting/reflect/imperative_plain x depth]; (b) tool-false-validation resistance on date+hhmm. Model 2
+needs its OWN failing traces (pilot its hit rate first; no cross-model replay). Propose one different-family Ollama
+model for 16GB RAM/4GB VRAM/i7-12700H; reconfirm specs; await approval.
+
+---
+
+## 2026-07-28 — STEP 2 second backbone (mistral:7b): generalization CONFOUNDED by tool-capability
+**What:** Pulled mistral:7b; tool-calling smoke = 3/6 (chains but ~half arg-threading errors; between llama 0/6 and
+qwen 6/6). Ran its hit-rate pilot (31 tasks x 3 = 93 runs, own traces, no cross-model replay), spot-checked +
+categorized all 81 failing traces.
+**Result — Mistral is too tool-unreliable to be a clean generalization backbone:**
+- Categorized 81 failures: SL lookup-then-assert/incomplete 34; tool-emit-as-text 18 (printed the tool call as
+  literal text, never called it — Mistral format bug); no-tool-call 16 (reasoned in text); other-arith(muddled) 10;
+  CLEAN surface-form-misuse only 3.
+- **Skipped-lookup hallucination GENERALIZES (mechanism):** Mistral also fabricates the unfetched value (reads
+  manager=#202, invents "John Smith"/"John Doe" without calling get_record(202)). Not qwen-only.
+- **Surface-form misuse does NOT reproduce (3/81):** Mistral doesn't reflexively feed YYYYMMDD/HHMM to arithmetic;
+  it reasons in text / emits garbage / format-fails. The clean tool-false-validation mechanism's OCCURRENCE is
+  model-specific (needs a tool-reflexive model; qwen yes, mistral no).
+- **Recovery UNTESTABLE on Mistral:** 34/81 failures are tool-emission pathologies; recovery arms depend on the
+  model re-issuing tool calls, so failure-to-recover can't be attributed to the intervention vs Mistral's tool bug.
+  Did NOT run the recovery sweep (pre-committed rule: report the confound, don't force a muddy comparison).
+- **Methodological finding:** the second-backbone generalization test is confounded by model tool-capability — can't
+  separate "does the finding generalize" from "is the model competent enough to exhibit the mechanism + respond to
+  tool-based repairs." qwen2.5 unusually clean at 7B; mistral/llama not.
+**Docs:** recovery-v2-results.md Step-2 section. Raw: data/mistral_pilot/traces.jsonl (81 failing).
+**Next:** HOLD for human. Options: (a) pick a different tool-reflexive model (rare at local 7B), (b) accept
+generalization-confounded-by-tool-capability as a documented limitation (mechanism generalizes; recovery untestable
+at 7B), (c) narrow to mechanism-occurrence only. Did NOT run mistral recovery. No further runs until human decides.

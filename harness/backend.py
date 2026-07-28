@@ -73,14 +73,40 @@ class OllamaBackend:
             self._client = ollama.Client(host=self._host)
         return self._client
 
+    def _chat_with_retry(self, messages: list[Message], tools: list[dict[str, Any]],
+                         options: dict[str, Any], attempts: int = 5, backoff: float = 3.0) -> Any:
+        """Call the Ollama server, retrying transient network failures.
+
+        A long local run on a memory-constrained GPU can drop the connection
+        mid-request (httpx.RemoteProtocolError / connect errors) when the server
+        restarts under load. Those are transient, so we back off and recreate the
+        client; a genuinely bad request (any non-network error) is re-raised at once.
+        """
+        import time
+
+        import httpx
+
+        transient = (httpx.RemoteProtocolError, httpx.ConnectError, httpx.ReadError,
+                     httpx.ReadTimeout, httpx.ConnectTimeout, httpx.PoolTimeout, ConnectionError)
+        last: Exception | None = None
+        for i in range(attempts):
+            try:
+                return self._get_client().chat(
+                    model=self._model_tag, messages=messages, tools=tools, options=options)
+            except transient as exc:
+                last = exc
+                self._client = None  # force a fresh client next attempt
+                if i < attempts - 1:
+                    time.sleep(backoff * (i + 1))  # linear backoff: 3s, 6s, 9s, 12s
+        raise RuntimeError(f"Ollama chat failed after {attempts} attempts: {last}") from last
+
     def chat(
         self,
         messages: list[Message],
         tools: list[dict[str, Any]],
         options: dict[str, Any],
     ) -> ChatResponse:
-        client = self._get_client()
-        resp = client.chat(model=self._model_tag, messages=messages, tools=tools, options=options)
+        resp = self._chat_with_retry(messages, tools, options)
         msg = resp["message"]
         calls = msg.get("tool_calls") or []
         tool_name: str | None = None

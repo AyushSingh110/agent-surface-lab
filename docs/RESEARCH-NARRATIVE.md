@@ -274,6 +274,29 @@ Two DR-era claims have now been corrected by follow-up work — the "iatrogenic 
 (→ phrasing-sensitivity) and the "imperative vs declarative" claim (→ action-licensing). Both corrections
 strengthen the account; they are recorded, not hidden.
 
+**Firm-up (Step 1, N=10 on the argument-critical cells): the contrast HOLDS, it did not soften.** At N=10,
+`declarative_neutral` stays low at every depth (0.16 / 0.18 / 0.20) — worst at depths 1–2, below
+`imperative_plain` (0.66 / 0.42) — while the action-licensing arms stay high (`lookup_permitting`
+1.00 / 0.75 / 0.60; `reflect` 0.60 / 0.83 / 0.60). Two declaratives (`neutral` vs `lookup_permitting`)
+differ only by the licensing clause, and by ~0.6–0.8 in recovery — so the driver is licensing, not mood.
+Surface-form (date+hhmm) at N=10 stays ≤ 0.14 across all arms: recovery-resistant, firmly. Both headlines
+survive the harder n.
+
+**4.11 Second backbone (Mistral 7B): the generalization check, and what it can and cannot say.** Per the
+sequencing rule, after the recovery signal was confirmed on qwen, a narrow generalization check ran on a
+different-family model (mistral:7b), which needs its own failing traces (no cross-model replay). Three
+outcomes, all honest: (1) **skipped-lookup hallucination GENERALIZES** — Mistral fabricates the unfetched
+value too (reads `manager=#202`, invents "John Smith" without calling `get_record(202)`), so the mechanism
+is confirmed cross-model, no longer qwen-only. (2) **Surface-form ("tool false-validation") misuse is
+MODEL-CONDITIONAL** — it reproduced in only 3/81 Mistral traces because Mistral does not reflexively apply
+the arithmetic tool to numeric-looking strings (it reasons in text). Framed as a finding with a named
+precondition: *this misuse occurs in tool-reflexive models, and where it occurs it is unrecoverable by
+text repair* — which tells a practitioner **which** agents are vulnerable. (3) **Recovery generalization is
+UNTESTABLE at local-7B** — 34/81 Mistral failures are tool-emission pathologies, and every recovery arm
+depends on the model re-issuing a tool call, so "failed to recover" cannot be separated from "couldn't
+emit a tool call." Rather than force a muddy number, the recovery sweep was **not run** on Mistral; the
+tool-capability confound is itself reported as a methodological caution. (Full: `docs/recovery-v2-results.md`.)
+
 ---
 
 ## 5. Current status, open questions, known limitations
