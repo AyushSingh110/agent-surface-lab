@@ -314,23 +314,31 @@ re-pilot: **8 induced + 6 budget-exceeded / 84** — are no longer provisional. 
 limitations (TM-5 intermediate-value, CO-5 spurious-extra) remain open and are recorded in the audit
 guard; neither affects any observed pilot run.
 
-**Open questions / immediate next steps.**
-1. Human ratification of the **silent-tool-misuse** operational definition (`work-plan.md` §2.0).
-2. Final sign-off on the **v2 task families** (`task-family-v2.md`): ~13 skipped-lookup + ~13
-   silent-misuse tasks, verifiers built against the battery, a ~20-run pilot before any full batch.
-3. A **second-backbone generalization check** — held until the v2 pilot shows a real hit rate; under the
-   new framing it is a generalization test ("do these mechanisms appear across models?"), not a confound.
+**Status is now past exploration.** The v2 families were built, labeled, and swept; the recovery findings
+are established on qwen at real n (skipped-lookup n=50, surface-form n=31), the argument-critical cells
+firmed at N=10, and the second-backbone check run. **The next phase is WRITE-UP, not more runs**
+(`docs/paper-outline.md`).
 
-**Known limitations (stated plainly).**
-- **One model, small, toy tasks.** External validity is unestablished; the mechanism framing is what
-  makes this more than a one-model characterization, but generalization is untested (hence step 4).
-- **Silent-misuse tasks risk manufacturing** if we withhold an obvious tool purely to force misuse; the
-  v2 spec includes controls (right-tool-present; unit named; id clarified) precisely to separate a real
-  mechanism from a tooling artifact. Report both.
-- **The verifier is now understood to be a first-class threat to validity**, not plumbing. The audit is a
-  standing guard, not a one-time fix; every new task enters the battery before it is run.
-- **n is tiny so far** (~8 real induced failures). This is not yet a study; scaling the two working
-  structures (v2) is the path to a real n.
+**Open questions.**
+1. Whether the recovery findings (action-licensing; text-repair resistance) are **model-general** —
+   currently demonstrated on one model; the second-backbone check confirmed only the *mechanism*, not
+   recovery, because of the tool-capability confound. A cleaner cross-model recovery test needs a
+   tool-reliable model, which is scarce at local-7B under the Ollama-only constraint.
+2. Firming the remaining **near-boundary, N=3 mid-range cells** if a reviewer wants tighter estimates.
+3. The sibling **`paper-toolseo`** study (deferred): the second surface where the same thesis is expected.
+
+**Known limitations (stated plainly; see `recovery-v2-results.md` "Limitations and scope").**
+- **Single primary model (qwen2.5:7b)** for all recovery results; generalization of *recovery* untested.
+- **Synthetic sandbox** (deterministic record chains / date-clock strings) — buys clean counterfactuals
+  and audited ground truth at the cost of unestablished external validity to real workloads.
+- **Directional n on some cells** — headline extremes firm at N=10, but several mid-range rates sit near a
+  decision boundary and are read as directional.
+- **Tool-capability confounds cross-model recovery evaluation** — a model must be tool-reliable enough to
+  exhibit the mechanism *and* respond to a tool-based repair; only qwen met that bar at 7B. Reported both
+  as a limitation and as a methodological result.
+- **Single-labeler labels** (assisted, spot-check-validated); no κ at this scale.
+- **The verifier is a first-class threat to validity**, not plumbing — the adversarial audit is a standing
+  guard; every task enters the battery before it is run.
 
 ---
 

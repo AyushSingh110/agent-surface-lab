@@ -714,3 +714,43 @@ categorized all 81 failing traces.
 **Next:** HOLD for human. Options: (a) pick a different tool-reflexive model (rare at local 7B), (b) accept
 generalization-confounded-by-tool-capability as a documented limitation (mechanism generalizes; recovery untestable
 at 7B), (c) narrow to mechanism-occurrence only. Did NOT run mistral recovery. No further runs until human decides.
+
+---
+
+## 2026-07-28 — Second-backbone section finalized; limitations added; PAPER OUTLINE written (write-up phase)
+**What:** Per human decision (accept the confound as a documented limitation + fold in mechanism-only generalization):
+finalized the Step-2 framings, added a "Limitations and scope" section to recovery-v2-results.md, updated
+RESEARCH-NARRATIVE (s4.11 second backbone + s5 limitations), and wrote docs/paper-outline.md. NO new experiments.
+**Framings locked:** (1) skipped-lookup hallucination GENERALIZES cross-model (Mistral fabricates unfetched value) —
+stated as a confirmed strengthening; (2) surface-form misuse is MODEL-CONDITIONAL, framed as a finding naming a
+PRECONDITION (occurs in tool-reflexive models; unrecoverable by text repair where it occurs); (3) recovery
+generalization UNTESTABLE at local-7B — tool-capability confound as a methodological contribution.
+**Paper outline (docs/paper-outline.md):** title options (recommend the thesis-forward one; the "detection is not
+repair" title RETIRED), abstract structure, 2 headline findings (H1 action-licensing recovers skipped-lookup; H2
+tool-false-validated misuse resists text repair), 5 contributions, method, figure/table spine (T1-T5, F1, definition
+box), related-work positioning, and — the deliverable the human asked for — a CLAIM->EVIDENCE MAP (C1-C11) with a
+solidity flag on each (FIRM / DIRECTIONAL / NEAR-BOUNDARY / SINGLE-MODEL / CROSS-MODEL). Explicitly flags the soft
+load-bearing numbers: C4 depth-3 (n=6, near-boundary), all recovery claims SINGLE-MODEL, C9 rests on absence in one
+alt model. Target venues = agentic-AI / reliability / safety workshops first, then extend.
+**Docs:** recovery-v2-results.md (framings + limitations), RESEARCH-NARRATIVE s4.11/s5, paper-outline.md.
+**Next:** STOP. Human reviews the claim-to-evidence map before any drafting. No writing, no runs until then.
+
+---
+
+## 2026-07-28 — Second-backbone framings finalized; WRITE-UP phase; paper outline produced
+**What:** Finalized the Step-2 (Mistral) framings in recovery-v2-results.md (mechanism generalizes; surface-form
+model-conditional stated as a finding-with-precondition; recovery-untestable framed as a methodological
+contribution). Confirmed the "Limitations and scope" sections exist in recovery-v2-results.md and RESEARCH-NARRATIVE
+s5 (single primary model, synthetic sandbox, directional N=3 on some cells, tool-capability confound, no kappa).
+Wrote docs/paper-outline.md.
+**Why:** Human moved the project to WRITE-UP (no new experiments); wants the claim->evidence mapping reviewed before
+any writing.
+**paper-outline.md contents:** title options; abstract sketch; contributions C1-C6; section skeleton; the figure/
+table list (T1 failure incidence, T2 recovery arm x depth N=10, Fig1 lateness curve, T3 surface-form N=10, T4
+Mistral categorization, T5 tool-calling reliability, T0 verifier audit); a CLAIM->EVIDENCE MAP table with a solidity
+flag per load-bearing sentence (STRONG/MODERATE/SINGLE-MODEL/INTERPRETIVE/NEAR-BOUNDARY); an explicit list of the
+soft-number sentences (every recovery claim is SINGLE-MODEL qwen; C3b/C4 "blind" clause INTERPRETIVE; depth-3 & version
+n=6 thin; ~119 near-boundary N=3 cells excluded from headlines); target-venue shortlist (workshop-tier honest read).
+**Config:** no runs (write-up only).
+**Next:** HOLD. Human reviews the claim->evidence map in docs/paper-outline.md before any prose is written. No new
+experiments; no writing beyond the outline until approved.
