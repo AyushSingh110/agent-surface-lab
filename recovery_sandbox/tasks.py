@@ -3,7 +3,7 @@ tools, requirements, and deterministic verifiers (mirrors docs/kill-test-tasks.m
 
 `intended_class` is the DESIGN TARGET of a task, used only to report failure rate
 by intended class in the pilot. It is NOT a label of the realized failure class —
-that is assigned by the human labeler, never by code (CLAUDE.md §3).
+that is assigned by the human labeler, never by code.
 
 Verifiers are built per-run via `make_verifier(sandbox_dir)` because file-deliverable
 checks are relative to that run's sandbox directory. Non-file verifiers ignore the dir.

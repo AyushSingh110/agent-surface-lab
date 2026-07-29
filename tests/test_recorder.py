@@ -34,7 +34,7 @@ def test_append_and_load(tmp_path: Path, recorded_trace: TraceRecord) -> None:
 
 
 def test_ground_truth_fields_default_none(recorded_trace: TraceRecord) -> None:
-    # A freshly recorded trace must not carry fabricated labels (CLAUDE.md §3).
+    # A freshly recorded trace must not carry fabricated labels.
     assert recorded_trace.answer_correct is None
     assert recorded_trace.failure_class is None
     assert recorded_trace.failure_step_k is None

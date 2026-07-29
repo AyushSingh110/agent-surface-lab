@@ -10,12 +10,11 @@ requires-python = ">=3.10"
 
 # Runtime dependencies are kept deliberately minimal for the Recovery kill test.
 # Every entry is flagged and justified below; heavier deps for later phases are
-# listed as commented placeholders and are NOT installed until their phase begins
-# (CLAUDE.md 6/7 — flag every dependency before adding it).
+# listed as commented placeholders and are NOT installed until their phase begins.
 dependencies = [
     # Official Python client for the local Ollama server — the only backbone.
     "ollama>=0.3,<1.0",
-    # Config files as dataclass-friendly YAML (CLAUDE.md 4 prefers YAML/dataclass config).
+    # Config files as dataclass-friendly YAML.
     "pyyaml>=6.0,<7.0",
     # Loads .env (OLLAMA_HOST / OLLAMA_MODEL / SEED) without hardcoding.
     "python-dotenv>=1.0,<2.0",
@@ -23,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    # Test the recorder, replay layer, and metric math (CLAUDE.md 4 — a wrong metric invalidates the paper).
+    # Test the recorder, replay layer, and metric math.
     "pytest>=8.0,<9.0",
 ]
 
@@ -35,7 +34,7 @@ dev = [
 #   paper-toolseo (Idea C attacker): dspy-ai
 #   embedding-drift features (B):   a local embedding model via Ollama (no new pip dep expected)
 #
-# Each will be proposed for approval before being added (CLAUDE.md 6).
+# Each will be proposed for approval before being added.
 # ---------------------------------------------------------------------------
 
 [tool.setuptools.packages.find]

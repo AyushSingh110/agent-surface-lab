@@ -8,7 +8,7 @@ construction. `tests/test_replay.py` verifies that equality on a real recorded r
 
 `replay_cell` runs N replays of one (intervention, trace) and returns the per-replay
 success booleans (via a deterministic verifier). Reporting the DISTRIBUTION over N,
-not a single sample, is the §8-item-10 decision.
+not a single sample.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from harness.tools import ToolRegistry
 from harness.trace import Message, TraceRecord, messages_appended_by
 
 # A deterministic verifier maps (trace, final_output) -> did the run succeed?
-# NEVER an LLM judge (CLAUDE.md / §8 item 4): must be a deterministic check.
+# NEVER an LLM judge: must be a deterministic check.
 Verifier = Callable[[TraceRecord, str], bool]
 
 

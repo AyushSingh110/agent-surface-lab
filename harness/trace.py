@@ -36,7 +36,7 @@ class StepRecord:
         tool_result: The tool's returned value as a string, or None.
         latency_ms: Wall-clock latency of the model call.
         token_count: Prompt+completion token count reported by the backend, if any.
-        ts: ISO-8601 timestamp of the step (per-step timestamp, CLAUDE.md §4).
+        ts: ISO-8601 timestamp of the step.
     """
 
     turn: int
@@ -62,8 +62,7 @@ class TraceRecord:
     Ground-truth and oracle-label fields (`answer_correct`, `failure_class`,
     `failure_step_k`) are filled in *after* the run — by the deterministic verifier
     and the human labeling pass respectively — and default to None at record time so
-    we never confuse "not yet labeled" with a real value (CLAUDE.md §3: no fabricated
-    results).
+    we never confuse "not yet labeled" with a real value.
     """
 
     trace_id: str

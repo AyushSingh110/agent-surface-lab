@@ -7,8 +7,7 @@ does the resuming. This keeps them trivially testable.
 
 `no_op` is deliberately first and first-class: it is the control arm that re-runs
 from k with NO change, telling us which runs would have self-recovered. The
-iatrogenic rate — the study's central contribution post-DoVer — is defined
-against it, so it must never be dropped for compute (work-plan §2 reframe).
+iatrogenic rate is defined against it, so it must never be dropped for compute.
 """
 from __future__ import annotations
 
@@ -98,7 +97,7 @@ def requirement_injection(trace: TraceRecord, k: int, config: Config) -> Interve
 
     Fails loudly if the trace carries no `requirement`: injecting a missing
     requirement we don't have would mean fabricating one, which would corrupt the
-    result (CLAUDE.md §3). The task set must supply requirements for this arm.
+    result. The task set must supply requirements for this arm.
     """
     if trace.requirement is None:
         raise ValueError(
@@ -116,7 +115,7 @@ def requirement_injection(trace: TraceRecord, k: int, config: Config) -> Interve
     )
 
 
-# The kill-test arm set (work-plan §8 item 3), no_op first as the control.
+# The kill-test arm set, no_op first as the control.
 KILL_TEST_INTERVENTIONS: dict[str, Intervention] = {
     "no_op": no_op,
     "reflect_and_retry": reflect_and_retry,

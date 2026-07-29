@@ -1,8 +1,8 @@
 """Chat backend abstraction — the model is dependency-injected, hence swappable.
 
 The runner and replay layer depend only on the `ChatBackend` protocol, never on
-the Ollama client directly. That keeps the backbone swappable (CLAUDE.md: Ollama
-is the only backend, but injected) and, crucially, lets tests drive the agent
+the Ollama client directly. That keeps the backbone swappable and, crucially,
+lets tests drive the agent
 loop with a scripted `FakeBackend` so the harness is testable without a live
 model.
 """
@@ -130,7 +130,7 @@ def _parse_args(raw: Any) -> dict[str, Any]:
     """Parse tool arguments that a backend may hand back as a JSON string.
 
     Fails loudly on unparseable arguments rather than silently substituting {}
-    — a swallowed parse error here would corrupt a trace (CLAUDE.md §4).
+    — a swallowed parse error here would corrupt a trace.
     """
     import json
 

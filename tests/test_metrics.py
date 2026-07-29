@@ -1,4 +1,4 @@
-"""Metric-math tests — a wrong metric silently invalidates the paper (CLAUDE.md §4).
+"""Metric-math tests — a wrong metric silently invalidates the paper.
 
 Every number below is hand-computed in the comments so the assertion is checkable
 by eye, independent of the implementation.

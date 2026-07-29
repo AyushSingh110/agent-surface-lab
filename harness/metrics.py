@@ -1,8 +1,8 @@
 """Recovery metrics: recovery rate (distribution over N) and the iatrogenic rate.
 
-A wrong metric silently invalidates the paper (CLAUDE.md §4), so this module is
-pure, dependency-free arithmetic over recorded replay outcomes and is tested
-explicitly in `tests/test_metrics.py`. No model calls, no I/O.
+A wrong metric silently invalidates the paper, so this module is pure,
+dependency-free arithmetic over recorded replay outcomes and is tested explicitly
+in `tests/test_metrics.py`. No model calls, no I/O.
 
 Definitions used throughout:
 - A *cell* is one (intervention, failure_class). A *trace's cell rate* is its
@@ -78,8 +78,7 @@ def _pair(
     """Pair each intervention outcome with the same trace's no_op outcome.
 
     Fails loudly if the trace sets differ: an unpaired comparison would silently
-    bias the iatrogenic rate, which is exactly the kind of corrupted result CLAUDE.md
-    forbids.
+    bias the iatrogenic rate.
     """
     inter = _index_by_trace(intervention_outcomes, "intervention")
     noop = _index_by_trace(noop_outcomes, "no_op")

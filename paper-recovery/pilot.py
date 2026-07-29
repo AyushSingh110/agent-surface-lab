@@ -1,6 +1,6 @@
 """Pilot driver: generate a small batch of runs to MEASURE real failure rates
 before committing the full batch. It saves traces for the human to label — it
-NEVER assigns a failure class (CLAUDE.md §3; class labeling is the human's, code
+NEVER assigns a failure class (class labeling is the human's; code
 only computes the deterministic `answer_correct`).
 
 What it reports: failure rate by INTENDED class (each task's design target). The

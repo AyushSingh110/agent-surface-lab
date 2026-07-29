@@ -1,9 +1,11 @@
-# Secrets / local config — never commit (CLAUDE.md rule 4)
+# Secrets / local config — never commit
 .env
+.env.*
+!.env.example
 
 # (conda env `surface` lives outside the repo — nothing to ignore here)
 
-# Raw research data — never commit (CLAUDE.md rule 5): traces, labeled sets, analyses
+# Raw research data — never commit: traces, labeled sets, analyses
 data/
 *.jsonl
 
@@ -21,6 +23,24 @@ dist/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Draft manuscript — local only, not part of the tracked method code (build artifacts + working LaTeX)
+paper/
+
+# Internal research docs — kept local for the public release. Strategy, planning,
+# the append-only running log, and working memos live outside the public method
+# repo; the paper (on Zenodo) is the public writeup of the results.
+/CLAUDE.md
+/LOGBOOK.md
+/individual-research-plan.md
+/docs/RESEARCH-NARRATIVE.md
+/docs/literature-review.md
+/docs/paper-outline.md
+/docs/work-plan.md
+/docs/recovery-v2-results.md
+/docs/kill-test-recovery-memo.md
+/docs/kill-test-tasks.md
+/docs/task-family-v2.md
 
 # OS / editor cruft
 .DS_Store

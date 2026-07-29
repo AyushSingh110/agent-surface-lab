@@ -4,8 +4,7 @@ Persistence choice: one JSONL line per *trace* (steps nested), not one line per
 step. A recovery study needs a whole trace as a unit (reconstruct context up to k,
 then replay), and trace-level metadata (seed, model, ground truth, oracle labels)
 must travel with its steps. One-trace-per-line keeps that unit intact while staying
-append-only and stream-readable (CLAUDE.md §4/§5). Raw traces live under `data/`
-(gitignored).
+append-only and stream-readable. Raw traces live under `data/` (gitignored).
 
 StepRecords are constructed in exactly one place — the runner — so context growth
 (`messages_appended_by`) and what gets stored can never diverge. This module only
@@ -45,7 +44,7 @@ def build_trace(
     Ground-truth (`answer_correct`) and oracle labels (`failure_class`,
     `failure_step_k`) are deliberately left None here; they are set later by the
     deterministic verifier and the human labeling pass, so an unlabeled trace can
-    never be mistaken for a labeled one (CLAUDE.md §3).
+    never be mistaken for a labeled one.
     """
     return TraceRecord(
         trace_id=trace_id,

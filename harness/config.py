@@ -1,7 +1,7 @@
 """Run configuration — a single dataclass that every experiment logs.
 
-Reproducibility rule (CLAUDE.md §4): every run must set and log its seed, the
-backbone model/tag, and the sampling parameters. This module is the one place
+Every run must set and log its seed, the backbone model/tag, and the sampling
+parameters. This module is the one place
 those live, loaded from `.env` (via python-dotenv) with optional YAML override,
 so nothing is scattered as hardcoded constants.
 """
@@ -28,7 +28,7 @@ class Config:
         temperature: Sampling temperature. 0.0 gives near-deterministic single
             samples; >0 is used when we deliberately want a recovery distribution.
         n_replays: Default number of replays per (intervention, trace) cell.
-            Per §8 item 10 this is a FLOOR of 3 for real runs; N=1 is allowed for
+            Real runs use this as the default replay count; N=1 is allowed for
             fast iteration. The metrics layer may request a higher N per cell.
         max_turns: Hard cap on agent steps per run, so a looping agent terminates.
     """
@@ -69,7 +69,7 @@ def load_config(yaml_path: str | Path | None = None) -> Config:
 
     Precedence (lowest to highest): dataclass defaults < `.env` < YAML file.
     We fail loudly on an unreadable YAML rather than silently ignoring it, because
-    a silently-dropped config is a reproducibility hole (CLAUDE.md §4).
+    a silently-dropped config is a reproducibility hole.
 
     Args:
         yaml_path: Optional path to a YAML file whose keys override env/defaults.
