@@ -6,7 +6,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![tests](https://img.shields.io/badge/tests-82%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-108%20passing-brightgreen.svg)](tests/)
 [![status: active research](https://img.shields.io/badge/status-active%20research-orange.svg)](#status)
 [![backbone: local Ollama](https://img.shields.io/badge/backbone-local%20Ollama-lightgrey.svg)](docs/setup.md)
 
@@ -61,14 +61,30 @@ directional, not settled results. Raw data stays local.
   never fetched) and **tool-false-validation misuse** (feeding an operand-shaped string — a `YYYYMMDD` date, an
   `HHMM` time — to a general arithmetic tool, which returns a non-error result and so *falsely validates* a
   meaningless computation).
-- **What recovers skipped-lookup is *action-licensing*, not grammatical mood.** Two repair prompts that are
-  grammatically identical and differ only in whether they *permit a fresh tool lookup* recover very
-  differently (≈1.00 vs ≈0.16 at chain depth 1, N=10). Repairs that license the corrective action recover;
-  restating the requirement without licensing it does not. *(This corrects an earlier "declarative beats
-  imperative" reading, which fuller data refuted.)*
-- **Tool-false-validation misuse resists every text-level repair we tried** (≤0.14, N=10): once a tool has
-  "confirmed" a well-formed wrong number, prompting the model to review or restate does not remove the false
-  validation — the corrupting signal is a tool result, not a prompt.
+- **A repair prompt works through three separable channels — and the biggest one is not what it says.**
+  Holding the instruction fixed and varying only its trailing clause against a *length-matched placebo*
+  (m=50, N=10):
+  - **Salience: +0.30 [+0.18, +0.42].** Appending *"this is an important requirement"* — which grants
+    nothing, names nothing, and adds no information — lifts recovery from 0.49 to 0.79. Most of what looks
+    like a well-designed repair is the presence of a second sentence.
+  - **Action-licensing: +0.15 [+0.09, +0.21]** on top of that. Content does matter; it's roughly half the
+    size of salience. The best repair we found licenses the corrective action *without mentioning tools*
+    (**0.94 [0.89, 0.98]**).
+  - **Naming tools actively harms: −0.22 [−0.33, −0.12].** *"Tools were available for this task"* performs
+    **worse than saying something meaningless.** Verified by replay: under the placebo the agent issues the
+    missing lookup; under this phrasing it makes *no tool call at all* and fabricates the link from context.
+    A past-tense description of tools reads as though the tool phase is over — **the repair re-induces the
+    failure it was meant to fix.**
+
+  *(This supersedes two earlier readings — "declarative beats imperative", then "action-licensing" alone.
+  Measured against the proper placebo, our original headline arm is **+0.04 [−0.02, +0.10]**: indistinguishable
+  from a contentless clause, because its licensing benefit is cancelled by its own tool-mention cost. The
+  observation was real; the explanation was wrong.)*
+- **Tool-false-validation misuse resists text-level repair almost completely** (all arms ≤0.14, N=10): once a
+  tool has "confirmed" a well-formed wrong number, prompting the model to review or restate barely helps —
+  the corrupting signal is a tool result, not a prompt. Only `reflect_and_retry` has a detectable effect at
+  all (+0.14 [+0.04, +0.25] on clock forms), leaving ≥86% unrecovered. Notably the repair that recovers
+  skipped-lookup at 1.00 recovers **0 of 110** replays here: **action-licensing is mechanism-specific.**
 - **Recovery decays with detection lateness** — the deeper in the chain a skip is caught, the less a repair
   recovers.
 - A second backbone (`mistral:7b`) reproduces the skipped-lookup *mechanism* cross-model, but is too
@@ -86,8 +102,14 @@ See the limitations below.
 - **Synthetic sandbox.** Deterministic, small tasks and fixtures — a clean counterfactual, but external
   validity to real workloads is not established.
 - **Directional *n*.** Headline extremes are firm at N=10; some cells remain N=3 and a few mid-range rates
-  sit near a decision boundary. Deep-chain and dotted-version sub-families rest on small *n* and are trends,
-  not point estimates.
+  sit near a decision boundary. Deep-chain and dotted-version sub-families rest on 6 traces — their
+  intervals are correspondingly wide and they are trends, not point estimates. Every reported rate now
+  carries a 95% bootstrap CI so this is visible rather than asserted.
+- **The factorial covers one clause set, not the space of repairs.** The three channels are identified
+  relative to *these* sentences; a different phrasing of "licensing" could carry a different weight. Salience
+  is measured with a single placebo clause, so +0.30 is evidence the channel exists and is large, not a
+  calibrated constant. Likewise the tool-mention harm is shown for one past-tense phrasing — more precisely,
+  "naming tools *this way* hurts."
 - **Labeling.** Failure-class labels are from a single (assisted) labeler, spot-check-validated; no
   inter-annotator agreement was computed at this scale.
 
@@ -96,15 +118,20 @@ See the limitations below.
 - **Causal, not judged.** Recovery is measured by counterfactual replay against a no-op control, never an LLM judge.
 - **Deterministic, audited ground truth.** Every verifier is a deterministic function, adversarially audited;
   numeric answers are token- and unit-aware so "right number, wrong unit" cannot pass.
+- **Uncertainty is reported, not implied.** Every rate carries a 95% CI from a two-level paired bootstrap
+  (resample traces, then replays) — the trace, not the replay, is the unit of uncertainty. All-zero cells get
+  a cluster-level rule-of-three bound instead of a false-precision `[0, 0]`.
 - **Honest by construction.** Null and negative results are reported plainly. Numbers below real *n* are
-  labeled directional. Corrections and retractions are made openly, not buried.
+  labeled directional. Corrections and retractions are made openly, not buried — including one made *by*
+  these intervals: an earlier "resists *every* text-level repair" claim was too absolute and has been
+  restated.
 - **Data hygiene.** Only method code and aggregate results are tracked; raw traces, labeled datasets, and full
   analyses stay local (gitignored).
 
 ## Repository layout
 
 ```
-harness/            reusable core: recorder, replay, interventions, metrics, verifiers, backend
+harness/            reusable core: recorder, replay, interventions, metrics, bootstrap, verifiers, backend
 recovery_sandbox/   deterministic tools, fixtures, and task families for paper-recovery
 paper-recovery/     study code: config, generation + recovery drivers
 tests/              pytest suite (harness + verifier audit + sandbox)

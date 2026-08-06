@@ -27,6 +27,9 @@ dist/
 # Draft manuscript — local only, not part of the tracked method code (build artifacts + working LaTeX)
 paper/
 
+# Blog drafts — local working copy of posts written for an external platform
+blog/
+
 # Internal research docs — kept local for the public release. Strategy, planning,
 # the append-only running log, and working memos live outside the public method
 # repo; the paper (on Zenodo) is the public writeup of the results.
