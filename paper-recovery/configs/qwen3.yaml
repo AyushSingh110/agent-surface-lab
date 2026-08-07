@@ -1,0 +1,25 @@
+# Second-backbone (generalization check) run config — Qwen3 8B.
+#
+# Admitted by the Phase 3 tool-reliability screen at 6/6 clean chains (the only
+# other model of five screened to clear the pre-committed bar; granite3.3:8b
+# managed 1/6, mistral:7b and llama3.x 0/6).
+#
+# SCOPE OF THE CLAIM THIS ENABLES: qwen3 is the SAME FAMILY as the pinned
+# qwen2.5:7b, so a replication here tests GENERATION-generality, not
+# FAMILY-generality. It is a weaker check than a different-family backbone would
+# be, and the write-up must say so rather than implying broad model-generality.
+#
+# KNOWN CONFOUND, recorded deliberately: qwen3 runs with reasoning ("thinking")
+# mode on by default, which qwen2.5 does not have. Any difference in results
+# therefore conflates model generation with the presence of a reasoning phase.
+# This cuts one way usefully: if the findings REPLICATE despite that difference,
+# the evidence is stronger than a like-for-like comparison would give. If they
+# diverge, the divergence is NOT attributable to generation alone.
+#
+# Reasoning mode also makes qwen3 substantially slower per call (the 6-task
+# screen exceeded 10 minutes), so run budgets here are larger than qwen2.5's.
+model_tag: qwen3:8b
+seed: 20260721
+temperature: 0.7
+n_replays: 3
+max_turns: 8
