@@ -1,42 +1,4 @@
-"""Nonparametric bootstrap confidence intervals for recovery rates.
-
-A recovery cell reports a macro mean over traces (see `metrics.mean_recovery`), but a
-bare point estimate hides the fact that some cells rest on 6 traces and some on 23.
-This module attaches an interval to every reported rate.
-
-**Why a TWO-LEVEL bootstrap.** The data has two nested sources of variation and a
-naive bootstrap over replays would understate the dominant one:
-
-1. *Between traces* — which failing traces we happened to collect. With m=6 to m=23
-   traces per cell this is by far the larger source of uncertainty.
-2. *Within a trace* — the N stochastic replays of that trace under one intervention.
-
-Each bootstrap iteration therefore resamples traces with replacement, and then
-resamples each drawn trace's replay outcomes with replacement. Resampling only
-replays (holding the trace set fixed) would treat our particular 6 traces as the
-population and produce intervals that are far too narrow.
-
-**Why PAIRED differences get their own function.** The headline claim is a contrast
-(`lookup_permitting` minus `declarative_neutral`), and every arm was run on the *same*
-traces. Bootstrapping the two arms independently and subtracting throws away that
-pairing and inflates the interval. `paired_diff_ci` draws one set of trace indices per
-iteration and evaluates both arms on it, so trace-level correlation is preserved --
-exactly the structure `metrics.iatrogenic_rate` already relies on.
-
-**Degenerate cells.** When every replay of every trace in a cell failed, the
-percentile bootstrap returns [0.00, 0.00]: resampling zeros can only ever yield zero.
-That interval is arithmetically correct and epistemically misleading -- observing no
-recoveries is not proof that the true rate is zero. Such cells are flagged
-`degenerate` and carry a `conservative_upper` computed by the rule of three at the
-CLUSTER level (3/m over traces, not 3/(m*N) over replays), because replays of one
-trace are not independent observations. See `rule_of_three_upper`.
-
-Determinism: every function takes an explicit seed and uses its own `random.Random`
-instance, so results never depend on global RNG state and rerunning reproduces the
-interval exactly (CLAUDE.md section 4).
-"""
 from __future__ import annotations
-
 import random
 from dataclasses import dataclass
 
